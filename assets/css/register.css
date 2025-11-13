@@ -1,0 +1,20 @@
+body {
+  background: rgb(240, 240, 240);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+}
+
+/* messages */
+.msg {
+  margin-top: 12px;
+  font-size: 14px;
+  color: #c0392b;
+  text-align: center;
+}
+
+.msg.ok {
+  color: #2ecc71;
+}
+#

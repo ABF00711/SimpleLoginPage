@@ -1,0 +1,17 @@
+body {
+  background: rgb(240, 240, 240);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+}
+
+#loginForm {
+  width: 100%;
+}
+
+#message {
+  color: #c0392b;
+  font-size: 14px;
+  text-align: center;
+}

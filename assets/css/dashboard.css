@@ -1,0 +1,83 @@
+/* ===== GENERAL ===== */
+body {
+  background: #f5f6fa;
+  margin: 0;
+  padding: 0;
+  color: #333;
+}
+
+/* ===== HEADER ===== */
+header {
+  background: #2d3436;
+  color: #fff;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 2rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+header h1 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 500;
+}
+
+.logout-btn {
+  background: #d63031;
+  color: #fff;
+  padding: 0.6rem 1.2rem;
+  border-radius: 8px;
+  text-decoration: none;
+  transition: background 0.3s;
+}
+
+.logout-btn:hover {
+  background: #ff4757;
+}
+
+/* ===== MAIN CONTENT ===== */
+.content {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  margin-top: 50px;
+  padding: 20px;
+}
+
+/* ===== CARD override size===== */
+.card {
+  max-width: 900px;
+}
+
+/* ===== SMART GRID ===== */
+smart-grid {
+  height: 400px;
+  width: 100%;
+  border-radius: 12px;
+  --smart-grid-border-color: #dcdde1;
+  --smart-grid-header-background: #0984e3;
+  --smart-grid-header-color: white;
+  --smart-grid-alternation-count: 2;
+}
+
+smart-grid-cell .smart-label {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.add-user-button {
+  margin-top: 20px;
+  text-align: right;
+}
+
+/* ===== FORM ==== */
+
+.submit * {
+  padding: 5px 10px;
+  width: fit-content;
+  margin: 0 auto;
+}
+
+
