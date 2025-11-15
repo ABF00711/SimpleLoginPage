@@ -53,7 +53,7 @@ window.onload = async () => {
 
   // Fetch users from backend and populate grid
   try {
-    const res = await fetch('./backend/getAllUsers.php');
+    const res = await fetch('./backend/users.php?action=getUsers');
     const users = await res.json();
     const data = users.data || [];
 
@@ -167,7 +167,7 @@ window.onload = async () => {
     // Choose endpoint based on mode
     const endpoint = formMode === "create"
       ? "./backend/register.php"
-      : "./backend/editUserById.php";
+      : "./backend/users.php?action=editUser";
 
     // Send data to backend
     const res = await fetch(endpoint, {
@@ -200,7 +200,7 @@ window.onload = async () => {
     }
 
     const ids = selected.rows.map(r => r.row.data.id);
-    const res = await fetch("./backend/deleteUsersById.php", {
+    const res = await fetch("./backend/users.php?action=deleteUsers", {
       method: "POST",
       headers: {"Content-Type":"application/json"},
       body: JSON.stringify({ ids })
