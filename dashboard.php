@@ -40,7 +40,7 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
   <header>
     <div class="header-left">
       <!-- Display logged-in user's first name -->
-      <h1>Welcome, <?php echo htmlspecialchars($_SESSION['firstName']); ?></h1>
+      <h1>Welcome, <?php echo htmlspecialchars($_SESSION['username']); ?></h1>
     </div>
     <div class="header-right">
       <a href="./logout.php" class="logout-btn">Logout</a>
