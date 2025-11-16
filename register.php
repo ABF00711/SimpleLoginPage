@@ -37,34 +37,7 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
       <!-- Registration form wrapper -->
       <form id="registerForm" novalidate>
 
-      <div class="flex">
-
-        <!-- First Name Input -->
-        <div class="smart-form-row">
-          <label>First name</label>
-          <smart-input
-            data-field="firstName"
-            placeholder="First name"
-            class="underlined"
-            form-control-name="firstName"
-            required
-          ></smart-input>
-        </div>
-
-        <!-- Last Name Input -->
-        <div class="smart-form-row">
-          <label>Last name</label>
-          <smart-input
-            data-field="lastName"
-            placeholder="Last name"
-            class="underlined"
-            form-control-name="lastName"
-            required
-          ></smart-input>
-        </div>
-
-      </div>
-
+      <div class="block">
         <!-- Email Input -->
         <div class="smart-form-row">
           <label>Email</label>
@@ -106,15 +79,19 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
           </smart-password-text-box>
         </div>
 
-        <!-- Address input -->
         <div class="smart-form-row">
-          <label>Address</label>
-          <smart-input
-            data-field="address"
-            placeholder="Street address"
+          <label>Confirm Password</label>
+          <smart-password-text-box
+            show-password-icon
+            show-password-strength
+            type="password"
+            data-field="confirm_password"
+            placeholder="Enter password again"
             class="underlined"
-            form-control-name="address"
-          ></smart-input>
+            form-control-name="confirm_password"
+            required
+          >
+          </smart-password-text-box>
         </div>
 
         <!-- Error/message text -->

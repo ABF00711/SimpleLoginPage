@@ -30,8 +30,13 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Basic client-side validation for required fields
-    if (!payload.firstName || !payload.lastName || !payload.username || !payload.password || !payload.address || !payload.email) {
+    if (!payload.username || !payload.password || !payload.email) {
       msg.textContent = "Please fill in all fields.";
+      return;
+    }
+
+    if(payload.password !== payload.confirm_password){
+      msg.textContent = "Please confirm password!";
       return;
     }
 
@@ -50,23 +55,20 @@ document.addEventListener('DOMContentLoaded', () => {
         body: JSON.stringify(payload)
       });
 
-      // Throw error if HTTP response not OK
       if (!res.ok) throw new Error('Network response was not ok');
 
-      const data = await res.json(); // Parse JSON response
+      const data = await res.json();
 
-      // Handle success
       if (data.status === 'success') {
         msg.textContent = data.message || 'Account created successfully.';
         msg.classList.add('ok');
-        window.location.href = './index.php'; // Redirect to login page
+        window.location.href = './index.php'; 
       } else {
         // Display error from backend (duplicate username/email etc.)
         msg.textContent = data.message || 'Registration failed.';
       }
 
     } catch (err) {
-      // Handle fetch/server errors
       console.error(err);
       msg.textContent = 'Server error. Try again later.';
     }

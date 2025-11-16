@@ -1,25 +1,19 @@
 <?php
-// backend/login.php
 header('Content-Type: application/json');
 session_start();
 require_once 'db.php';
 
-// Read raw input (supports fetch/JSON requests)
 $raw = file_get_contents('php://input');
 $json = json_decode($raw, true);
 
-// Accept identifier as username or email from either JSON or form POST
 $identifier = $json['identifier'] ?? $_POST['identifier'] ?? $json['username'] ?? $_POST['username'] ?? null;
 $password   = $json['password']   ?? $_POST['password']   ?? null;
 $emailField = $json['email']      ?? $_POST['email']      ?? null;
 
-// If email field was explicitly provided, treat it as identifier
 if (!$identifier && $emailField) {
     $identifier = $emailField;
 }
 
-// Validate required login credentials
-// User must provide either username or email along with password
 if (!$identifier || !$password) {
     http_response_code(400);
     echo json_encode([
