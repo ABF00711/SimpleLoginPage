@@ -23,28 +23,23 @@ if (!$identifier || !$password) {
     exit;
 }
 
-// Hash password to match stored MD5 hash (legacy compatibility)
 $hashed = md5($password);
 
-// SQL query allows login using either username OR email
-$sql = "SELECT id, username, firstName, lastName 
+$sql = "SELECT id, name, email 
         FROM users 
-        WHERE (username = ? OR email = ?) AND password = ? 
+        WHERE (name = ? OR email = ?) AND hashedpassword = ? 
         LIMIT 1";
 
 $stmt = $conn->prepare($sql);
 
-// If statement failed to prepare, return database error
 if (!$stmt) {
     http_response_code(500);
     echo json_encode(['success' => false, 'message' => $conn->error]);
     exit;
 }
 
-// Bind parameters safely to prevent SQL injection
 $stmt->bind_param("sss", $identifier, $identifier, $hashed);
 
-// Execute query and check for execution errors
 if (!$stmt->execute()) {
     http_response_code(500);
     echo json_encode(['success' => false, 'message' => $stmt->error]);
@@ -55,7 +50,6 @@ if (!$stmt->execute()) {
 
 $result = $stmt->get_result();
 
-// Handle unexpected query errors
 if (!$result) {
     http_response_code(500);
     echo json_encode([
@@ -65,15 +59,13 @@ if (!$result) {
     exit;
 }
 
-// Check if user exists and password matched
 if ($result->num_rows > 0) {
     $user = $result->fetch_assoc();
 
-    // Store user session info
     $_SESSION['loggedin']  = true;
     $_SESSION['user_id']   = $user['id'];
-    $_SESSION['username']  = $user['username'];
-    $_SESSION['firstName'] = $user['firstName'];
+    $_SESSION['username']  = $user['name'];
+    $_SESSION['email'] = $user['email'];
 
     echo json_encode(['success' => true]);
 } else {
