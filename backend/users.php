@@ -8,6 +8,7 @@
 header('Content-Type: application/json');
 require_once 'db.php';
 
+
 // Disable strict MySQL exception mode for duplicate error handling
 mysqli_report(MYSQLI_REPORT_OFF);
 

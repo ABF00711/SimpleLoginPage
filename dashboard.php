@@ -39,11 +39,37 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
   <!-- Top header section -->
   <header>
     <div class="header-left">
-      <!-- Display logged-in user's first name -->
-      <h1>Welcome, <?php echo htmlspecialchars($_SESSION['username']); ?></h1>
+      <div class="appIcon">
+        <img src="./assets/image/logo.png" alt="">
+      </div>
+      <h1 class="app-title">BeornNotes</h1>
+    </div>
+    <div id = "header-menu" class="header-menu">
+
     </div>
     <div class="header-right">
-      <a href="./logout.php" class="logout-btn">Logout</a>
+      <div class="user-menu">
+        <smart-drop-down-list selected-indexes="[0]" class="user-dropdown">
+          <smart-list-item value="username">
+            <span class="dropdown-username"><?php echo htmlspecialchars($_SESSION['username']); ?></span>
+          </smart-list-item>
+          <smart-list-item value="profile" class="dropdown-item">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+              <circle cx="12" cy="7" r="4"></circle>
+            </svg>
+            <a href="./profile.php">Profile</a>
+          </smart-list-item>
+          <smart-list-item value="logout" class="dropdown-item logout-item">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+              <polyline points="16 17 21 12 16 7"></polyline>
+              <line x1="21" y1="12" x2="9" y2="12"></line>
+            </svg>
+            <a href="./logout.php">Logout</a>
+          </smart-list-item>
+        </smart-drop-down-list>
+      </div>
     </div>
   </header>
 
@@ -135,6 +161,9 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
       <div id="msgText" style="padding: 15px;"></div>
   </smart-window>
 
+  <!-- Dashboard logic file -->
+  <!-- Menu renderer (inserts menu into #header-menu) -->
+  <script src="./assets/js/menu.js"></script>
   <!-- Dashboard logic file -->
   <script type="module" src="./assets/js/dashboard.js"></script>
 
