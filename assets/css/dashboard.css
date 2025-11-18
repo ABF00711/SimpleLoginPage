@@ -27,6 +27,10 @@ header {
   gap: 1rem;
 }
 
+smart-menu{
+  --smart-menu-default-width: 100%;
+}
+
 .appIcon {
   width: 48px;
   height: 48px;

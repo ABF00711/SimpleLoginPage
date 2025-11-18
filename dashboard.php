@@ -44,8 +44,9 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
       </div>
       <h1 class="app-title">BeornNotes</h1>
     </div>
-    <div id = "header-menu" class="header-menu">
-
+    <div class="header-middle">
+      <smart-menu id = "menu" drop-down-append = "body">
+      </smart-menu>
     </div>
     <div class="header-right">
       <div class="user-menu">
