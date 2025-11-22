@@ -23,6 +23,12 @@ if (!isset($requireAuth) || $requireAuth === true) {
     }
 }
 
+// Check if we're in API mode (don't render HTML, just set variables)
+if (defined('API_MODE') && API_MODE === true) {
+    // In API mode, we just need the variables set, don't render HTML
+    return;
+}
+
 // Set default values
 $pageTitle = $pageTitle ?? 'BeornNotes';
 $pageStyles = $pageStyles ?? [];
@@ -83,6 +89,7 @@ $pageScripts = $pageScripts ?? [];
   ?>
 
   <!-- Common scripts -->
+  <script src="./assets/js/router.js"></script>
   <script src="./assets/js/menu.js"></script>
   
   <!-- Page-specific scripts -->

@@ -58,7 +58,22 @@ document.addEventListener('DOMContentLoaded', async () => {
       menuItem.value = item.id;
       menuItem.addEventListener('click', () => {
         if (item.path) {
-          window.location.href = item.path;
+          // Check if it's an authenticated page (SPA route) or external page
+          const path = item.path.replace('./', '').replace('/', '');
+          const pageName = path.replace('.php', '');
+          
+          // If it's login, register, or logout, use normal navigation
+          if (pageName === 'index' || pageName === 'login' || pageName === 'register' || pageName === 'logout') {
+            window.location.href = item.path;
+          } else {
+            // Use SPA router for authenticated pages
+            if (window.SPARouter && window.SPARouter.loadPage) {
+              window.SPARouter.loadPage(pageName);
+            } else {
+              // Fallback to normal navigation if router not loaded
+              window.location.href = item.path;
+            }
+          }
         }
       });
       return menuItem;
