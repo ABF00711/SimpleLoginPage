@@ -52,7 +52,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         // Delay to show success message, then redirect to dashboard
         setTimeout(() => {
-          window.location.href = "./dashboard.php";
+          window.location.href = "./index.php";
         }, 400);
       } else {
         // Backend returned error (wrong credentials)
