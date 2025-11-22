@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', async () => {
-  const menu = document.querySelector('smart-menu#menu');  
+  const menu = document.getElementById('menu');  
   if (!menu) return;
 
   async function fetchMenu() {
@@ -70,13 +70,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   tree.forEach(node => {
     const el = createMenuItem(node);
-    menu.appendChild(el);
-  });
-
-  tree.forEach((node, idx) => {
-    if (node.children && node.children.length > 0) {
-      const group = menu.getItem(node.id.toString()); // or path
-      if (group) menu.expandItem(group, false);
-    }
+    menu.addItem(el);
   });
 });
