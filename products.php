@@ -16,6 +16,8 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Products</title>
 
+<!-- Favicon -->
+<link rel="icon" type="image/png" href="./assets/image/logo.png">
 <!-- Global styles -->
 <link rel="stylesheet" href="./assets/css/style.css">
 <link rel="stylesheet" href="./assets/css/products.css">

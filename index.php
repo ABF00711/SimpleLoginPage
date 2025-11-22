@@ -15,6 +15,8 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Smart UI Hybrid Login</title>
 
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="./assets/image/logo.png">
   <!-- Main global styles -->
   <link rel="stylesheet" href="./assets/css/style.css">
   <!-- Page-specific styles -->
@@ -85,3 +87,4 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
   <script src="./assets/js/login.js"></script>
 </body>
 </html>
+

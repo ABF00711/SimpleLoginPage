@@ -16,6 +16,8 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Dashboard</title>
 
+<!-- Favicon -->
+<link rel="icon" type="image/png" href="./assets/image/logo.png">
 <!-- Global styles -->
 <link rel="stylesheet" href="./assets/css/style.css">
 <!-- Dashboard specific styles -->
@@ -170,3 +172,4 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
 
 </body>
 </html>
+

@@ -15,6 +15,8 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Register - Smart UI</title>
 
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="./assets/image/logo.png">
     <!-- Global styles -->
     <link rel="stylesheet" href="./assets/css/style.css">
     <link rel="stylesheet" href="./assets/css/register.css" />
@@ -111,3 +113,4 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
     <script src="./assets/js/register.js"></script>
   </body>
 </html>
+
