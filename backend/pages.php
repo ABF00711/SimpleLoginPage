@@ -26,22 +26,14 @@ if (!$pageName) {
 }
 
 // Whitelist of allowed pages (security)
-$allowedPages = [
-    'dashboard',
-    'customers',
-    'products',
-    'orders',
-    'profile',
-    'customers2',
-    'inventory_report',
-    'summary_report'
-];
+$sql = "SELECT path FROM menu ORDER BY sort ASC";
 
-if (!in_array($pageName, $allowedPages)) {
-    http_response_code(400);
-    echo json_encode(['status' => 'error', 'message' => 'Invalid page name']);
-    exit;
-}
+$stmt = $conn->prepare($sql);
+$stmt->execute();
+$result = $stmt->get_result();
+$menu = $result->fetch_all(MYSQLI_ASSOC);
+
+$allowedPages = array_column($menu, 'path');
 
 // Map page names to their PHP files
 $pageFile = __DIR__ . '/../' . $pageName . '.php';
