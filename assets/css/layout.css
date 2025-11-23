@@ -1,0 +1,73 @@
+smart-tabs {
+  width: 100%;
+  height: 100%;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+}
+
+/* Style smart-tabs to match the UI */
+smart-tabs.demoTabs {
+  --smart-surface: #fff;
+  --smart-border: #e0e0e0;
+  border: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  background: #fff;
+}
+
+/* Tab header styling */
+smart-tabs .smart-header {
+  background: #fff;
+  border-bottom: 1px solid #e0e0e0;
+  padding: 0;
+  margin: 0;
+  border-radius: 0;
+}
+
+smart-tabs .smart-tab-item {
+  padding: 14px 24px;
+  font-weight: 500;
+  font-size: 14px;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  transition: all 0.2s ease;
+  border-bottom: 2px solid transparent;
+}
+
+smart-tabs .smart-tab-item:hover {
+  color: #0066ff;
+  background: rgba(0, 102, 255, 0.05);
+}
+
+smart-tabs .smart-tab-item[selected] {
+  color: #0066ff;
+  border-bottom: 2px solid #0066ff;
+  background: transparent;
+}
+
+/* Tab content area */
+smart-tabs .smart-tabs-content {
+  background: #fff;
+  padding: 30px;
+  flex: 1;
+  overflow-y: auto;
+  margin: 0;
+  border-radius: 0;
+}
+
+/* Adjust card styling within tab content */
+smart-tabs .smart-tabs-content .card {
+  max-width: 100%;
+  box-shadow: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  background: transparent;
+}

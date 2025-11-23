@@ -55,6 +55,7 @@ $pageScripts = $pageScripts ?? [];
 
 <!-- Smart UI default theme -->
 <link rel="stylesheet" href="./libs/smart-ui/source/styles/smart.default.css">
+<link rel="stylesheet" href="./assets/css/layout.css">
 
 <!-- Smart UI license setup -->
 <script>
