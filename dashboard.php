@@ -1,7 +1,7 @@
 <?php
 // Page configuration
 $pageTitle = 'Dashboard';
-$pageScripts = ['pages/dashboard.js'];
+$pageScripts = ['dashboard.js'];
 
 // Start output buffering to capture page content
 ob_start();

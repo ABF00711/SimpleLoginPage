@@ -2,7 +2,7 @@
 // Page configuration
 $pageTitle = 'Customers';
 $pageStyles = ['customers.css'];
-$pageScripts = ['pages/dashboard.js'];
+$pageScripts = ['dashboard.js'];
 
 // Start output buffering to capture page content
 ob_start();

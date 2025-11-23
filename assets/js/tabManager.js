@@ -228,20 +228,28 @@ class TabManager {
         if (!modalsHTML) return;
 
         try {
-            const tabContent = this.tabs.getTabContent(tabIndex);
-            if (!tabContent) return;
+            // Wait a bit for tab to be fully created
+            setTimeout(() => {
+                const tabContent = this.tabs.getTabContent(tabIndex);
+                
+                // Check if tabContent is a valid HTMLElement
+                if (!tabContent || typeof tabContent.querySelector !== 'function') {
+                    console.warn('Tab content not available for index', tabIndex);
+                    return;
+                }
 
-            // Create a container for modals if it doesn't exist
-            let modalsContainer = tabContent.querySelector('.tab-modals-container');
-            if (!modalsContainer) {
-                modalsContainer = document.createElement('div');
-                modalsContainer.className = 'tab-modals-container';
-                modalsContainer.style.display = 'none'; // Hidden container for modals
-                tabContent.appendChild(modalsContainer);
-            }
+                // Create a container for modals if it doesn't exist
+                let modalsContainer = tabContent.querySelector('.tab-modals-container');
+                if (!modalsContainer) {
+                    modalsContainer = document.createElement('div');
+                    modalsContainer.className = 'tab-modals-container';
+                    modalsContainer.style.display = 'none'; // Hidden container for modals
+                    tabContent.appendChild(modalsContainer);
+                }
 
-            // Inject modals
-            modalsContainer.innerHTML = modalsHTML;
+                // Inject modals
+                modalsContainer.innerHTML = modalsHTML;
+            }, 100); // Wait for tab to be fully created
         } catch (error) {
             console.error('Error injecting modals:', error);
         }
@@ -400,41 +408,63 @@ class TabManager {
             }
             this.tabMap.clear();
 
-            // Restore tabs
+            // Wait for tabs to be fully cleared
+            await new Promise(resolve => setTimeout(resolve, 100));
+
+            // Restore tabs one by one (insert at end each time)
             for (let i = 0; i < state.tabs.length; i++) {
                 const tabData = state.tabs[i];
+                
+                try {
+                    // Get current tab count to insert at the end
+                    const currentTabItems = this.tabs.querySelectorAll('smart-tab-item');
+                    const insertIndex = currentTabItems.length;
 
-                this.tabs.insert(i, {
-                    label: tabData.label,
-                    content: tabData.content || '<div class="card"><h2>Loading...</h2></div>'
-                });
-
-                // Set data attribute
-                setTimeout(() => {
-                    const tabItems = this.tabs.querySelectorAll('smart-tab-item');
-                    if (tabItems[i]) {
-                        tabItems[i].setAttribute('data-page-name', tabData.pageName);
+                    // Validate tabs element is ready
+                    if (!this.tabs || typeof this.tabs.insert !== 'function') {
+                        console.error('Tabs element not ready for insert');
+                        break;
                     }
-                }, 50);
 
-                // Store in map
-                this.tabMap.set(tabData.pageName, {
-                    index: i,
-                    pageName: tabData.pageName,
-                    label: tabData.label,
-                    content: tabData.content || '',
-                    modals: tabData.modals || '',
-                    scripts: tabData.scripts || []
-                });
+                    // Insert tab at the end
+                    this.tabs.insert(insertIndex, {
+                        label: tabData.label,
+                        content: tabData.content || '<div class="card"><h2>Loading...</h2></div>'
+                    });
 
-                // Inject modals
-                if (tabData.modals) {
-                    this.injectModals(i, tabData.modals);
-                }
+                    // Wait for tab to be created before continuing
+                    await new Promise(resolve => setTimeout(resolve, 100));
 
-                // Load scripts
-                if (tabData.scripts && tabData.scripts.length > 0) {
-                    this.loadTabScripts(i, tabData.scripts);
+                    // Set data attribute
+                    const updatedTabItems = this.tabs.querySelectorAll('smart-tab-item');
+                    if (updatedTabItems[insertIndex]) {
+                        updatedTabItems[insertIndex].setAttribute('data-page-name', tabData.pageName);
+                    }
+
+                    // Store in map with actual index
+                    this.tabMap.set(tabData.pageName, {
+                        index: insertIndex,
+                        pageName: tabData.pageName,
+                        label: tabData.label,
+                        content: tabData.content || '',
+                        modals: tabData.modals || '',
+                        scripts: tabData.scripts || []
+                    });
+
+                    // Inject modals (with delay)
+                    if (tabData.modals) {
+                        setTimeout(() => {
+                            this.injectModals(insertIndex, tabData.modals);
+                        }, 150);
+                    }
+
+                    // Load scripts
+                    if (tabData.scripts && tabData.scripts.length > 0) {
+                        this.loadTabScripts(insertIndex, tabData.scripts);
+                    }
+                } catch (error) {
+                    console.error(`Error restoring tab ${i}:`, error);
+                    // Continue with next tab even if one fails
                 }
             }
 
