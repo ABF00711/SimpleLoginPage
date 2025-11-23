@@ -66,11 +66,11 @@ document.addEventListener('DOMContentLoaded', async () => {
           if (pageName === 'index' || pageName === 'login' || pageName === 'register' || pageName === 'logout') {
             window.location.href = item.path;
           } else {
-            // Use SPA router for authenticated pages
-            if (window.SPARouter && window.SPARouter.loadPage) {
-              window.SPARouter.loadPage(pageName);
+            // Use TabManager for authenticated pages
+            if (window.TabManager && window.TabManager.openTab) {
+              window.TabManager.openTab(pageName, item.title);
             } else {
-              // Fallback to normal navigation if router not loaded
+              // Fallback to normal navigation if TabManager not loaded
               window.location.href = item.path;
             }
           }

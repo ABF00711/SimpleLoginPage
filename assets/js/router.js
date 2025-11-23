@@ -6,12 +6,14 @@
  */
 
 class SPARouter {
-    constructor() {
+    constructor(autoInit = true) {
         this.currentPage = null;
         this.contentContainer = null;
         this.modalsContainer = null;
         this.pageCache = new Map();
-        this.init();
+        if (autoInit) {
+            this.init();
+        }
     }
 
     init() {
@@ -193,16 +195,7 @@ class SPARouter {
     }
 }
 
-// Initialize router
-const router = new SPARouter();
+const router = new SPARouter(false);
 
-// Handle browser back/forward buttons
-window.addEventListener('popstate', (event) => {
-    if (event.state && event.state.page) {
-        router.loadPage(event.state.page, false);
-    }
-});
-
-// Export for use in other scripts
 window.SPARouter = router;
 

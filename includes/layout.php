@@ -73,12 +73,7 @@ $pageScripts = $pageScripts ?? [];
 
   <!-- Page content area -->
   <main class="content">
-    <?php
-    // Page content will be inserted here via output buffering
-    if (isset($content)) {
-        echo $content;
-    }
-    ?>
+    <smart-tabs id="tabs" class="demoTabs" reorder close-buttons></smart-tabs>
   </main>
 
   <?php
@@ -90,6 +85,7 @@ $pageScripts = $pageScripts ?? [];
 
   <!-- Common scripts -->
   <script src="./assets/js/router.js"></script>
+  <script src="./assets/js/tabManager.js"></script>
   <script src="./assets/js/menu.js"></script>
   
   <!-- Page-specific scripts -->
