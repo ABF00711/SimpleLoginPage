@@ -9,6 +9,7 @@
     overflow-y: visible;
     margin: 1rem 0;
     width: 100%;
+    min-height: 600px;
 }
 
 /* Ensure horizontal scrollbar appears when table is wider than container */
@@ -80,22 +81,27 @@
 
 .table-module tr {
     display: table-row;
+    height: 35px !important;
+    line-height: 1;
 }
 
 /* Table Header */
 .table-module th.table-header {
     display: table-cell;
-    background-color: #f5f7fa;
-    padding: 1rem;
+    background-color: #0070ff;
+    padding: 0 12px;
     text-align: left;
     font-weight: 600;
-    color: #2c3e50;
+    color: #ffffff;
     border-bottom: 2px solid #e0e0e0;
     position: relative;
     user-select: none;
-    vertical-align: middle;
+    vertical-align: top;
     box-sizing: border-box;
     overflow: hidden;
+    height: 35px !important;
+    line-height: 35px;
+    font-size: 14px;
 }
 
 .table-header-inner {
@@ -103,6 +109,10 @@
     align-items: center;
     gap: 0.5rem;
     width: 100%;
+    height: 35px !important;
+    max-height: 35px !important;
+    line-height: 35px;
+    overflow: hidden;
 }
 
 .table-header.sortable {
@@ -156,8 +166,10 @@
 
 .sort-icon {
     margin-left: 0.5rem;
-    font-size: 0.875rem;
+    font-size: 14px;
     color: #7f8c8d;
+    line-height: 35px;
+    vertical-align: middle;
 }
 
 /* Column Drag Handle */
@@ -165,12 +177,14 @@
     display: inline-block;
     cursor: grab;
     color: #95a5a6;
-    font-size: 0.875rem;
+    font-size: 14px;
     margin-right: 0.5rem;
-    padding: 2px 4px;
+    padding: 0;
     user-select: none;
     touch-action: none;
     vertical-align: middle;
+    line-height: 35px;
+    height: 35px;
 }
 
 .column-drag-handle:active {
@@ -337,37 +351,51 @@
 /* Table Body */
 .table-module td.table-cell {
     display: table-cell;
-    padding: 1rem;
+    padding: 0 12px;
     border-bottom: 1px solid #e0e0e0;
     color: #34495e;
-    vertical-align: middle;
+    vertical-align: top;
     box-sizing: border-box;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    height: 35px !important;
+    line-height: 35px;
+    font-size: 14px;
 }
 
 /* Search Row Styles */
 .table-search-row {
     background-color: #f8f9fa;
     border-bottom: 2px solid #dee2e6;
+    height: 35px !important;
+    line-height: 1;
 }
 
 .table-search-cell {
-    padding: 0.5rem !important;
+    padding: 2px 8px !important;
     vertical-align: middle;
     box-sizing: border-box;
+    height: 35px !important;
+    line-height: 31px;
+}
+
+.table-search-cell .table-search-input-wrapper {
+    height: 31px;
+    line-height: 31px;
 }
 
 .table-search-cell .table-search-input {
     width: 100%;
-    padding: 0.5rem;
+    padding: 2px 6px;
     font-size: 0.875rem;
     border: 1px solid #ced4da;
     border-radius: 4px;
     background-color: #ffffff;
     transition: border-color 0.2s ease, box-shadow 0.2s ease;
     box-sizing: border-box;
+    height: 27px;
+    line-height: 23px;
 }
 
 .table-search-cell .table-search-input:focus {
