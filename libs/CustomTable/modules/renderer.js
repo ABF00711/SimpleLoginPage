@@ -256,5 +256,82 @@ class Renderer {
             this.table.filter.attachSearchListeners();
         }
     }
+
+    /**
+     * Updates only the data rows without re-rendering the search row
+     * This preserves focus on search inputs during filtering
+     */
+    updateDataRows() {
+        const tbody = this.table.container.querySelector('tbody');
+        if (!tbody) return;
+
+        // Get visible columns
+        const visibleColumns = this.table.columnManager.getVisibleColumns(
+            this.table.options.columns,
+            this.table.columnOrder
+        );
+
+        // Calculate column widths if resizable
+        const { columnWidthsMap } = this.calculateColumnWidths(visibleColumns);
+
+        // Find the search row (if it exists)
+        const searchRow = tbody.querySelector('.table-search-row');
+        
+        // Get all data rows (excluding search row)
+        const existingDataRows = Array.from(tbody.querySelectorAll('tr:not(.table-search-row)'));
+        
+        // Use filteredData if searchable is enabled, otherwise use options.data
+        const dataToRender = this.table.options.searchable ? this.table.filteredData : this.table.options.data;
+
+        // Remove existing data rows
+        existingDataRows.forEach(row => row.remove());
+
+        // Add new data rows
+        if (dataToRender.length === 0) {
+            const emptyRow = document.createElement('tr');
+            emptyRow.innerHTML = `<td colspan="${visibleColumns.length}" class="table-empty">No data available</td>`;
+            if (searchRow) {
+                // Insert after search row
+                searchRow.insertAdjacentElement('afterend', emptyRow);
+            } else {
+                tbody.appendChild(emptyRow);
+            }
+        } else {
+            // Create a document fragment for better performance
+            const fragment = document.createDocumentFragment();
+            
+            // Use a temporary tbody to parse tr elements (tr can't be child of div)
+            const tempTbody = document.createElement('tbody');
+            
+            dataToRender.forEach((row, rowIndex) => {
+                const rowHtml = this.renderDataRow(row, rowIndex, visibleColumns, columnWidthsMap);
+                tempTbody.innerHTML = rowHtml;
+                const newRow = tempTbody.firstElementChild;
+                
+                if (!newRow) {
+                    console.warn('Failed to parse row HTML:', rowHtml);
+                    return;
+                }
+                
+                // Remove from tempTbody and add to fragment
+                tempTbody.removeChild(newRow);
+                fragment.appendChild(newRow);
+            });
+            
+            // Insert all rows at once after search row
+            if (searchRow) {
+                // insertAdjacentElement doesn't work with DocumentFragment, so we need to insert after
+                const nextSibling = searchRow.nextSibling;
+                if (nextSibling) {
+                    tbody.insertBefore(fragment, nextSibling);
+                } else {
+                    // If no next sibling, append to tbody (will be after search row)
+                    tbody.appendChild(fragment);
+                }
+            } else {
+                tbody.appendChild(fragment);
+            }
+        }
+    }
 }
 

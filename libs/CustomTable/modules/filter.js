@@ -145,7 +145,8 @@ class Filter {
                 clearTimeout(debounceTimer);
                 debounceTimer = setTimeout(() => {
                     this.applyFilters();
-                    this.table.refresh();
+                    // Only update data rows, not the entire table (preserves search input focus)
+                    this.table.renderer.updateDataRows();
                 }, 300); // 300ms debounce
             });
         });
