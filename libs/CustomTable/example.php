@@ -5,28 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Table Module - PHP Example</title>
     <link rel="stylesheet" href="table-module.css">
-    <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 2rem;
-            background-color: #f5f7fa;
-        }
-        h1 {
-            color: #2c3e50;
-            margin-bottom: 2rem;
-        }
-        .example-section {
-            background: white;
-            padding: 2rem;
-            margin-bottom: 2rem;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-    </style>
 </head>
-<body>
+<body class="example-page-body">
     <h1>Table Module - PHP Integration Example</h1>
 
     <div class="example-section">
@@ -34,6 +14,16 @@
         <div id="users-table"></div>
     </div>
 
+    <!-- Load modules in order -->
+    <script src="modules/formatter.js"></script>
+    <script src="modules/column-manager.js"></script>
+    <script src="modules/state-manager.js"></script>
+    <script src="modules/filter.js"></script>
+    <script src="modules/sorter.js"></script>
+    <script src="modules/resizer.js"></script>
+    <script src="modules/reorderer.js"></script>
+    <script src="modules/visibility-manager.js"></script>
+    <script src="modules/renderer.js"></script>
     <script src="table-module.js"></script>
     <script>
         // Example: Data from PHP/MySQL
@@ -73,12 +63,13 @@
         const usersTable = new TableModule('users-table', {
             data: usersData,
             columns: [
-                { key: 'id', header: 'ID' },
-                { key: 'username', header: 'Username' },
-                { key: 'email', header: 'Email' },
+                { column_name: 'id', column_label: 'ID', column_type: 'number' },
+                { column_name: 'username', column_label: 'Username', column_type: 'string' },
+                { column_name: 'email', column_label: 'Email', column_type: 'string' },
                 { 
-                    key: 'role', 
-                    header: 'Role',
+                    column_name: 'role', 
+                    column_label: 'Role',
+                    column_type: 'string',
                     format: (value) => {
                         const colors = {
                             'Administrator': '#e74c3c',
@@ -89,9 +80,8 @@
                         return `<span style="color: ${color}; font-weight: 600;">${value}</span>`;
                     }
                 },
-                { key: 'created_at', header: 'Created At' }
-            ],
-            itemsPerPage: 5
+                { column_name: 'created_at', column_label: 'Created At', column_type: 'date' }
+            ]
         });
     </script>
 
@@ -111,10 +101,10 @@
                 const ajaxTable = new TableModule('ajax-table', {
                     data: data,
                     columns: [
-                        { key: 'id', header: 'ID' },
-                        { key: 'username', header: 'Username' },
-                        { key: 'email', header: 'Email' },
-                        { key: 'role', header: 'Role' }
+                        { column_name: 'id', column_label: 'ID', column_type: 'number' },
+                        { column_name: 'username', column_label: 'Username', column_type: 'string' },
+                        { column_name: 'email', column_label: 'Email', column_type: 'string' },
+                        { column_name: 'role', column_label: 'Role', column_type: 'string' }
                     ]
                 });
             })
