@@ -8,19 +8,11 @@ class VisibilityManager {
         this.table = tableInstance;
     }
 
-    attachVisibilityListeners() {
-        const visibilityToggles = this.table.container.querySelectorAll('.column-visibility-toggle');
-        visibilityToggles.forEach(toggle => {
-            toggle.addEventListener('click', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                const colKey = toggle.getAttribute('data-column-key');
-                this.toggleColumnVisibility(colKey);
-            });
-        });
-    }
-
     toggleColumnVisibility(colKey) {
+        // Check if dropdown is open before rendering
+        const dropdown = this.table.container.querySelector('.hidden-columns-dropdown');
+        const wasOpen = dropdown && dropdown.classList.contains('show');
+        
         const currentVisibility = this.table.columnVisibility[colKey];
         this.table.columnVisibility[colKey] = currentVisibility === false;
         
@@ -36,6 +28,46 @@ class VisibilityManager {
             this.table.columnVisibility
         );
         this.table.render();
+        
+        // Re-open dropdown if it was open before rendering
+        if (wasOpen) {
+            setTimeout(() => {
+                const newDropdown = this.table.container.querySelector('.hidden-columns-dropdown');
+                if (newDropdown) {
+                    newDropdown.classList.add('show');
+                }
+            }, 0);
+        }
+    }
+
+    resetColumnVisibility() {
+        // Check if dropdown is open before rendering
+        const dropdown = this.table.container.querySelector('.hidden-columns-dropdown');
+        const wasOpen = dropdown && dropdown.classList.contains('show');
+        
+        // Reset all columns to visible
+        this.table.options.columns.forEach(column => {
+            const colKey = column.key;
+            this.table.columnVisibility[colKey] = true;
+            column.visible = true;
+        });
+        
+        this.table.stateManager.saveState(
+            this.table.columnWidths,
+            this.table.columnOrder,
+            this.table.columnVisibility
+        );
+        this.table.render();
+        
+        // Re-open dropdown if it was open before rendering
+        if (wasOpen) {
+            setTimeout(() => {
+                const newDropdown = this.table.container.querySelector('.hidden-columns-dropdown');
+                if (newDropdown) {
+                    newDropdown.classList.add('show');
+                }
+            }, 0);
+        }
     }
 
     attachHiddenColumnsMenu() {
@@ -56,16 +88,27 @@ class VisibilityManager {
                 }
             });
 
-            // Handle hidden column item clicks
-            const hiddenItems = this.table.container.querySelectorAll('.hidden-column-item');
-            hiddenItems.forEach(item => {
+            // Handle column item clicks (toggle visibility)
+            const columnItems = this.table.container.querySelectorAll('.hidden-column-item');
+            columnItems.forEach(item => {
                 item.addEventListener('click', (e) => {
                     e.stopPropagation();
                     const colKey = item.getAttribute('data-column-key');
-                    this.toggleColumnVisibility(colKey);
-                    dropdown.classList.remove('show');
+                    if (colKey) {
+                        this.toggleColumnVisibility(colKey);
+                    }
                 });
             });
+
+            // Handle Reset button click
+            const resetBtn = this.table.container.querySelector('.hidden-column-reset');
+            if (resetBtn) {
+                resetBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    this.resetColumnVisibility();
+                    dropdown.classList.remove('show');
+                });
+            }
         }
     }
 }

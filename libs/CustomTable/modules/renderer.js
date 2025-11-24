@@ -25,9 +25,9 @@ class Renderer {
 
         let html = '';
 
-        // Show hidden columns dropdown if there are hidden columns
-        if (this.table.options.columnVisibility && hiddenColumns.length > 0) {
-            html += this.renderHiddenColumnsMenu(hiddenColumns);
+        // Show columns dropdown button if column visibility is enabled
+        if (this.table.options.columnVisibility) {
+            html += this.renderHiddenColumnsMenu(orderedColumns);
         }
 
         // Calculate column widths if resizable
@@ -58,19 +58,32 @@ class Renderer {
         this.attachEventListeners();
     }
 
-    renderHiddenColumnsMenu(hiddenColumns) {
+    renderHiddenColumnsMenu(allColumns) {
         let html = '<div class="hidden-columns-menu">';
-        html += '<button class="show-columns-btn" type="button" title="Show hidden columns">';
-        html += '<span>👁️</span> Show Columns (' + hiddenColumns.length + ')';
+        html += '<button class="show-columns-btn" type="button" title="Show/Hide columns">';
+        html += '<span class="show-columns-icon">👁</span>';
+        html += '<span class="show-columns-text">Hide</span>';
         html += '</button>';
         html += '<div class="hidden-columns-dropdown">';
-        hiddenColumns.forEach(column => {
+        
+        // Render all columns with checkboxes
+        allColumns.forEach(column => {
             const colKey = column.key;
-            html += `<div class="hidden-column-item" data-column-key="${colKey}">`;
-            html += `<span class="hidden-column-checkbox">✓</span>`;
+            const isVisible = column.visible !== false;
+            const checkedClass = isVisible ? ' checked' : '';
+            html += `<div class="hidden-column-item${checkedClass}" data-column-key="${colKey}">`;
+            html += `<span class="hidden-column-checkbox${checkedClass}">${isVisible ? '✓' : ''}</span>`;
             html += `<span class="hidden-column-label">${column.header || column.key}</span>`;
             html += '</div>';
         });
+        
+        // Add Reset button
+        html += '<div class="hidden-columns-divider"></div>';
+        html += '<div class="hidden-column-reset" data-action="reset">';
+        html += '<span class="hidden-column-reset-icon">↻</span>';
+        html += '<span class="hidden-column-reset-label">Reset</span>';
+        html += '</div>';
+        
         html += '</div>';
         html += '</div>';
         return html;
@@ -134,12 +147,6 @@ class Renderer {
             html += '<span class="header-content">';
             html += `${column.header || column.key}${sortIcon}`;
             html += '</span>';
-            
-            // Eye icon for visibility
-            if (this.table.options.columnVisibility) {
-                const hiddenClass = column.visible === false ? ' hidden' : '';
-                html += `<span class="column-visibility-toggle${hiddenClass}" data-column-key="${colKey}" title="Toggle visibility"></span>`;
-            }
             
             html += '</div>';
             
@@ -267,7 +274,6 @@ class Renderer {
             this.table.reorderer.attachReorderListeners();
         }
         if (this.table.options.columnVisibility) {
-            this.table.visibilityManager.attachVisibilityListeners();
             this.table.visibilityManager.attachHiddenColumnsMenu();
         }
         if (this.table.options.searchable) {
