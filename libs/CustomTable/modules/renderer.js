@@ -204,6 +204,16 @@ class Renderer {
             
             html += `<td class="table-search-cell" style="${widthStyle}">`;
             html += '<div class="table-search-input-wrapper">';
+            // Add filter operation selector
+            html += '<button type="button" class="filter-operation-btn" data-column-key="' + colKey + '" title="Filter operation">';
+            html += '<span class="filter-operation-icon">⋮</span>';
+            html += '</button>';
+            html += '<div class="filter-operation-dropdown" data-column-key="' + colKey + '">';
+            operations.forEach(op => {
+                const selected = currentOperation === op.value ? ' selected' : '';
+                html += `<div class="filter-operation-item${selected}" data-operation="${op.value}" data-column-key="${colKey}">${op.label}</div>`;
+            });
+            html += '</div>';
             
             if (column.type === 'boolean') {
                 html += `<select class="table-search-input" data-column-key="${colKey}" title="Search ${column.header}">`;
@@ -215,16 +225,6 @@ class Renderer {
                 html += `<input type="${inputType}" class="table-search-input" data-column-key="${colKey}" value="${this.table.formatter.escapeHtml(searchValue)}" placeholder="Search..." title="Search ${column.header}" ${inputAttrs}>`;
             }
             
-            // Add filter operation selector
-            html += '<button type="button" class="filter-operation-btn" data-column-key="' + colKey + '" title="Filter operation">';
-            html += '<span class="filter-operation-icon">⋮</span>';
-            html += '</button>';
-            html += '<div class="filter-operation-dropdown" data-column-key="' + colKey + '">';
-            operations.forEach(op => {
-                const selected = currentOperation === op.value ? ' selected' : '';
-                html += `<div class="filter-operation-item${selected}" data-operation="${op.value}" data-column-key="${colKey}">${op.label}</div>`;
-            });
-            html += '</div>';
             
             html += '</div>';
             html += '</td>';
