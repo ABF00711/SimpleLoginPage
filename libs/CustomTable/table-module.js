@@ -52,6 +52,7 @@ class TableModule {
         this.originalData = [...(options.data || [])];
         this.filteredData = [...this.originalData];
         this.searchValues = {};
+        this.filterOperations = {}; // Store selected filter operation per column
 
         // Initialize formatter
         this.formatter = Formatter;
