@@ -350,6 +350,60 @@ class Filter {
         this.attachOperationListeners();
     }
 
+    positionDropdown(button, dropdown) {
+        // Get button position relative to viewport
+        const buttonRect = button.getBoundingClientRect();
+        
+        // Temporarily show dropdown to measure its dimensions
+        const wasVisible = dropdown.classList.contains('show');
+        dropdown.style.display = 'block';
+        dropdown.style.visibility = 'hidden';
+        dropdown.style.opacity = '0';
+        
+        const dropdownRect = dropdown.getBoundingClientRect();
+        const dropdownHeight = dropdownRect.height || 200;
+        const dropdownWidth = dropdownRect.width || 180;
+        
+        // Calculate available space
+        const viewportWidth = window.innerWidth;
+        const viewportHeight = window.innerHeight;
+        const spaceRight = viewportWidth - buttonRect.right;
+        const spaceLeft = buttonRect.left;
+        const spaceBottom = viewportHeight - buttonRect.bottom;
+        const spaceTop = buttonRect.top;
+        
+        // Default: position below button, aligned to right
+        let top = buttonRect.bottom + 4;
+        let right = viewportWidth - buttonRect.right;
+        let left = 'auto';
+        let bottom = 'auto';
+        
+        // If not enough space below, position above
+        if (spaceBottom < dropdownHeight && spaceTop > dropdownHeight) {
+            top = 'auto';
+            bottom = viewportHeight - buttonRect.top + 4;
+        }
+        
+        // If not enough space on right, align to left
+        if (spaceRight < dropdownWidth && spaceLeft > dropdownWidth) {
+            right = 'auto';
+            left = buttonRect.left;
+        }
+        
+        // Apply calculated position
+        dropdown.style.top = top !== 'auto' ? top + 'px' : 'auto';
+        dropdown.style.bottom = bottom !== 'auto' ? bottom + 'px' : 'auto';
+        dropdown.style.left = left !== 'auto' ? left + 'px' : 'auto';
+        dropdown.style.right = right !== 'auto' ? right + 'px' : 'auto';
+        
+        // Restore visibility
+        dropdown.style.visibility = '';
+        dropdown.style.opacity = '';
+        if (!wasVisible) {
+            dropdown.style.display = '';
+        }
+    }
+
     attachOperationListeners() {
         const operationBtns = this.table.container.querySelectorAll('.filter-operation-btn');
         const operationDropdowns = this.table.container.querySelectorAll('.filter-operation-dropdown');
@@ -371,6 +425,11 @@ class Filter {
                 
                 // Toggle current dropdown
                 if (dropdown) {
+                    const isOpen = dropdown.classList.contains('show');
+                    if (!isOpen) {
+                        // Position dropdown before showing
+                        this.positionDropdown(btn, dropdown);
+                    }
                     dropdown.classList.toggle('show');
                 }
             });
@@ -407,10 +466,32 @@ class Filter {
         
         // Close dropdowns when clicking outside
         document.addEventListener('click', (e) => {
-            if (!this.table.container.contains(e.target)) {
+            const isDropdown = e.target.closest('.filter-operation-dropdown');
+            const isButton = e.target.closest('.filter-operation-btn');
+            if (!isDropdown && !isButton) {
                 operationDropdowns.forEach(dd => dd.classList.remove('show'));
             }
         });
+        
+        // Reposition dropdowns on scroll/resize
+        let resizeTimer = null;
+        const handleReposition = () => {
+            clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(() => {
+                operationDropdowns.forEach(dd => {
+                    if (dd.classList.contains('show')) {
+                        const colKey = dd.getAttribute('data-column-key');
+                        const btn = this.table.container.querySelector(`.filter-operation-btn[data-column-key="${colKey}"]`);
+                        if (btn) {
+                            this.positionDropdown(btn, dd);
+                        }
+                    }
+                });
+            }, 100);
+        };
+        
+        window.addEventListener('resize', handleReposition);
+        window.addEventListener('scroll', handleReposition, true);
     }
 }
 
