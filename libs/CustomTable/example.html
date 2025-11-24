@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Table Module - Dynamic Columns Example</title>
+    <link rel="stylesheet" href="table-module.css">
+</head>
+
+<body class="example-page-body">
+    <h1>Table Module - Dynamic Columns Example</h1>
+
+    <div class="example-section">
+        <h2>Dynamic Columns with column_label, column_name, column_type</h2>
+        <div id="dynamic-table"></div>
+    </div>
+
+    <script src="table-module.js"></script>
+    <script>
+
+        // Sample data sets
+        const usersData = [
+            { username: 'admin', email: 'admin@example.com', role: 'Administrator', salary: 95000, active: true, created_at: '2024-01-15', last_login: '2024-05-15 14:30:00' },
+            { username: 'john_doe', email: 'john@example.com', role: 'User', salary: 75000, active: true, created_at: '2024-02-20', last_login: '2024-05-14 09:15:00' },
+            { username: 'jane_smith', email: 'jane@example.com', role: 'Moderator', salary: 85000, active: false, created_at: '2024-03-10', last_login: '2024-05-10 16:45:00' },
+            { username: 'bob_wilson', email: 'bob@example.com', role: 'User', salary: 70000, active: true, created_at: '2024-03-15', last_login: '2024-05-15 11:20:00' },
+            { username: 'alice_brown', email: 'alice@example.com', role: 'User', salary: 72000, active: true, created_at: '2024-04-01', last_login: '2024-05-13 08:30:00' }
+        ];
+
+        // Column definitions for each table
+        const usersColumns = [
+            { column_name: 'username', column_label: 'Username', column_type: 'string' },
+            { column_name: 'email', column_label: 'Email', column_type: 'string' },
+            { column_name: 'role', column_label: 'Role', column_type: 'string' },
+            { column_name: 'salary', column_label: 'Salary', column_type: 'currency' },
+            { column_name: 'active', column_label: 'Active', column_type: 'boolean' },
+            { column_name: 'created_at', column_label: 'Created', column_type: 'date' },
+            { column_name: 'last_login', column_label: 'Last Login', column_type: 'datetime' }
+        ];
+
+        let usersTable = new TableModule('dynamic-table', {
+            data: usersData,
+            columns: usersColumns
+        });
+
+        usersTable.render();
+    </script>
+</body>
+
+</html>
