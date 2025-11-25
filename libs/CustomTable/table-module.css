@@ -7,15 +7,17 @@
 .table-container {
     box-shadow: 0px 0px 3px 1px grey;
     overflow-x: auto;
-    overflow-y: visible;
+    overflow-y: auto;
     margin: 1rem 0;
     width: 100%;
     min-height: 600px;
+    max-height: calc(100vh - 200px); /* Allow vertical scrolling when content exceeds viewport */
 }
 
-/* Ensure horizontal scrollbar appears when table is wider than container */
+/* Scrollbar styling for both horizontal and vertical */
 .table-container::-webkit-scrollbar {
-    height: 8px;
+    width: 8px;  /* Width for vertical scrollbar */
+    height: 8px; /* Height for horizontal scrollbar */
 }
 
 .table-container::-webkit-scrollbar-track {
@@ -30,6 +32,12 @@
 
 .table-container::-webkit-scrollbar-thumb:hover {
     background: #555;
+}
+
+/* Firefox scrollbar styling */
+.table-container {
+    scrollbar-width: thin;
+    scrollbar-color: #888 #f1f1f1;
 }
 
 .table-responsive {
@@ -74,6 +82,9 @@
 
 .table-module thead {
     display: table-header-group;
+    position: sticky;
+    top: 0;
+    z-index: 10;
 }
 
 .table-module tbody {
@@ -95,7 +106,9 @@
     font-weight: 600;
     color: #ffffff;
     border-bottom: 2px solid #e0e0e0;
-    position: relative;
+    position: sticky;
+    top: 0;
+    z-index: 10;
     user-select: none;
     vertical-align: top;
     box-sizing: border-box;
@@ -411,11 +424,18 @@
     border-bottom: 2px solid #dee2e6;
     height: 35px !important;
     line-height: 1;
+    position: sticky;
+    top: 35px; /* Position below the header (header height) */
+    z-index: 9;
 }
 
 .table-search-cell {
     padding: 2px 8px !important;
     vertical-align: middle;
+    background-color: #f8f9fa; /* Match row background for sticky effect */
+    position: sticky;
+    top: 35px; /* Position below the header */
+    z-index: 9;
     box-sizing: border-box;
     height: 35px !important;
     line-height: 31px;
