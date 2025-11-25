@@ -23,11 +23,13 @@ class TabManager {
      * Wait for tabs element to exist and be upgraded by Smart UI
      * Checks both element existence and method availability
      */
-    waitForTabsElement(callback, maxRetries = 50, currentRetry = 0) {
+    waitForTabsElement(callback, maxRetries = 100, currentRetry = 0) {
         const element = document.getElementById('tabs');
         
         // Check if element exists AND is upgraded (has required methods)
+        // Also check if Smart UI is loaded
         if (element && 
+            typeof Smart !== 'undefined' &&
             typeof element.insert === 'function' && 
             typeof element.select === 'function' &&
             typeof element.removeAt === 'function') {
@@ -45,9 +47,11 @@ class TabManager {
             // Max retries reached - log error
             console.error('Tabs element not found or not upgraded after', maxRetries * 50, 'ms');
             console.error('Element found:', !!element);
+            console.error('Smart UI loaded:', typeof Smart !== 'undefined');
             if (element) {
                 console.error('Element has insert method:', typeof element.insert);
                 console.error('Element has select method:', typeof element.select);
+                console.error('Element has removeAt method:', typeof element.removeAt);
             }
         }
     }
@@ -158,15 +162,33 @@ class TabManager {
                 throw new Error(data.message || 'Failed to load page');
             }
 
+            // Verify tabs element is still ready
+            if (!this.tabs || typeof this.tabs.insert !== 'function') {
+                throw new Error('Tabs element is not ready');
+            }
+
             // Get current tab count for insertion index
             const currentTabs = this.tabMap.size;
             const insertIndex = currentTabs;
 
             // Insert tab with content
-            this.tabs.insert(insertIndex, {
-                label: label,
-                content: data.content || '<div class="card"><h2>Loading...</h2></div>'
-            });
+            try {
+                this.tabs.insert(insertIndex, {
+                    label: label,
+                    content: data.content || '<div class="card"><h2>Loading...</h2></div>'
+                });
+            } catch (insertError) {
+                console.error('Error inserting tab:', insertError);
+                // Retry once after a short delay
+                await new Promise(resolve => setTimeout(resolve, 100));
+                if (!this.tabs || typeof this.tabs.insert !== 'function') {
+                    throw new Error('Tabs element still not ready after retry');
+                }
+                this.tabs.insert(insertIndex, {
+                    label: label,
+                    content: data.content || '<div class="card"><h2>Loading...</h2></div>'
+                });
+            }
 
             // Set data attribute on the tab item
             // We need to wait a bit for the tab to be created
@@ -544,26 +566,67 @@ class TabManager {
             // Wait for tabs to be fully cleared
             await new Promise(resolve => setTimeout(resolve, 100));
 
+            // Verify tabs element is ready before restoring
+            if (!this.tabs || typeof this.tabs.insert !== 'function') {
+                console.error('Tabs element not ready for restoreState');
+                return;
+            }
+
+            // Additional check: verify tabs element is connected to DOM
+            if (!this.tabs.isConnected || !this.tabs.parentElement) {
+                console.error('Tabs element not connected to DOM in restoreState');
+                return;
+            }
+
             // Restore tabs one by one (insert at end each time)
             for (let i = 0; i < state.tabs.length; i++) {
                 const tabData = state.tabs[i];
                 
                 try {
+                    // Verify tabs element is still ready before each insert
+                    if (!this.tabs || typeof this.tabs.insert !== 'function') {
+                        console.error('Tabs element not ready for insert at index', i);
+                        break;
+                    }
+
+                    // Additional check: verify tabs element is actually in the DOM and upgraded
+                    if (!this.tabs.isConnected || !this.tabs.parentElement) {
+                        console.error('Tabs element not connected to DOM at index', i);
+                        await new Promise(resolve => setTimeout(resolve, 100));
+                        if (!this.tabs.isConnected) {
+                            console.error('Tabs element still not connected after wait');
+                            break;
+                        }
+                    }
+
                     // Get current tab count to insert at the end
                     const currentTabItems = this.tabs.querySelectorAll('smart-tab-item');
                     const insertIndex = currentTabItems.length;
 
-                    // Validate tabs element is ready
-                    if (!this.tabs || typeof this.tabs.insert !== 'function') {
-                        console.error('Tabs element not ready for insert');
-                        break;
+                    // Insert tab at the end with error handling
+                    try {
+                        this.tabs.insert(insertIndex, {
+                            label: tabData.label,
+                            content: tabData.content || '<div class="card"><h2>Loading...</h2></div>'
+                        });
+                    } catch (insertError) {
+                        console.error('Error inserting tab at index', i, ':', insertError);
+                        // Wait a bit and retry once
+                        await new Promise(resolve => setTimeout(resolve, 200));
+                        if (!this.tabs || typeof this.tabs.insert !== 'function') {
+                            console.error('Tabs element still not ready after retry');
+                            break;
+                        }
+                        try {
+                            this.tabs.insert(insertIndex, {
+                                label: tabData.label,
+                                content: tabData.content || '<div class="card"><h2>Loading...</h2></div>'
+                            });
+                        } catch (retryError) {
+                            console.error('Error inserting tab on retry:', retryError);
+                            break; // Stop restoring if retry also fails
+                        }
                     }
-
-                    // Insert tab at the end
-                    this.tabs.insert(insertIndex, {
-                        label: tabData.label,
-                        content: tabData.content || '<div class="card"><h2>Loading...</h2></div>'
-                    });
 
                     // Wait for tab to be created before continuing
                     await new Promise(resolve => setTimeout(resolve, 100));

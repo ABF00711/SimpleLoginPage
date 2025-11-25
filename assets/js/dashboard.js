@@ -1,63 +1,112 @@
-// Wait for full page load before running dashboard logic
-// used to ensure grid + UI elements are ready
-window.onload = async () => {
-
-  // Track form mode (create/update) and delete target ID
-  let formMode = "create";
-  let deleteId = null;
-
-  // Cache page elements
-  const grid = document.querySelector('#grid');
-  const win = document.getElementById("addUserWindow");
-  const form = document.getElementById("addUserForm");
-  const submitBtn = document.getElementById("formSubmitBtn");
-  const msgWin = document.getElementById("msgWin");
-  const msgText = document.getElementById("msgText");
-
-  // Helper selector for form fields
-  const f = (name) => form.querySelector(`[data-field="${name}"]`);
-
-  // Show temporary UI message popup (success/error)
-  function showMsg(text, success){
-    msgText.textContent = text;
-    msgText.style.color = success ? "green" : "red";
-    msgWin.open();
-    setTimeout(()=> msgWin.close(), 1500);
+// Wait for full page load and Smart UI elements to be ready
+// Handle both cases: if window.onload already fired, execute immediately
+(async function initDashboard() {
+  // If DOM is already loaded, execute immediately, otherwise wait for onload
+  if (document.readyState === 'complete' || document.readyState === 'interactive') {
+    // DOM is ready, but wait a bit for Smart UI to upgrade elements
+    await new Promise(resolve => setTimeout(resolve, 100));
+    await executeDashboard();
+  } else {
+    window.addEventListener('load', async () => {
+      await executeDashboard();
+    });
   }
 
-  // Helper Email Validitor
-  function validateEmail(email) {
-    if (!email.trim()) return "Email is required";
-
-    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-    if (!emailRegex.test(email)) return "Enter a valid email";
-
-    return "";
-  }
-
-  // Enable checkbox-only row selection
-  grid.selection = {
-    enabled: true,
-    allowRowSelection: false,
-    checkBoxes: {
-      enabled: true,
-      position: 'near',
-      selectAllMode: 'all',
-      action: 'click'
+  async function executeDashboard() {
+  // Wait for grid element to exist and be upgraded by Smart UI
+  function waitForGrid(callback, maxRetries = 50, currentRetry = 0) {
+    const grid = document.querySelector('#grid');
+    
+    // If grid doesn't exist at all, this might not be the dashboard page
+    if (!grid) {
+      // Check if we're on dashboard page by looking for other dashboard elements
+      const dashboardElements = document.querySelector('#addNewUserBtn, #grid, #addUserWindow');
+      if (!dashboardElements) {
+        // Not on dashboard page, exit silently
+        return;
+      }
     }
-  };
+    
+    // Check if element exists AND is upgraded (has selection property)
+    if (grid && typeof grid.selection !== 'undefined') {
+      callback(grid);
+      return;
+    }
+    
+    // Retry if not ready yet
+    if (currentRetry < maxRetries) {
+      setTimeout(() => {
+        waitForGrid(callback, maxRetries, currentRetry + 1);
+      }, 50);
+    } else {
+      // Only log error if grid element exists but isn't ready
+      if (grid) {
+        console.error('Grid element not upgraded after', maxRetries * 50, 'ms');
+      }
+      return;
+    }
+  }
 
-  // Convert camelCase keys to readable table headers
-  const formatLabel = (key) =>
-    key.replace(/([A-Z])/g, " $1").replace(/^./, m => m.toUpperCase());
+  waitForGrid(async (grid) => {
+    // Track form mode (create/update) and delete target ID
+    let formMode = "create";
+    let deleteId = null;
 
-  // Fetch users from backend and populate grid
-  try {
-    const res = await fetch('./backend/users.php?action=getUsers');
-    const users = await res.json();
-    const data = users.data || [];
+    // Cache page elements
+    const win = document.getElementById("addUserWindow");
+    const form = document.getElementById("addUserForm");
+    const submitBtn = document.getElementById("formSubmitBtn");
+    const msgWin = document.getElementById("msgWin");
+    const msgText = document.getElementById("msgText");
 
-    if (data.length > 0) {
+    // Helper selector for form fields
+    const f = (name) => form ? form.querySelector(`[data-field="${name}"]`) : null;
+
+    // Show temporary UI message popup (success/error)
+    function showMsg(text, success){
+      if (msgText && msgWin) {
+        msgText.textContent = text;
+        msgText.style.color = success ? "green" : "red";
+        msgWin.open();
+        setTimeout(()=> msgWin.close(), 1500);
+      }
+    }
+
+    // Helper Email Validitor
+    function validateEmail(email) {
+      if (!email.trim()) return "Email is required";
+
+      const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+      if (!emailRegex.test(email)) return "Enter a valid email";
+
+      return "";
+    }
+
+    // Enable checkbox-only row selection
+    if (grid) {
+      grid.selection = {
+        enabled: true,
+        allowRowSelection: false,
+        checkBoxes: {
+          enabled: true,
+          position: 'near',
+          selectAllMode: 'all',
+          action: 'click'
+        }
+      };
+    }
+
+    // Convert camelCase keys to readable table headers
+    const formatLabel = (key) =>
+      key.replace(/([A-Z])/g, " $1").replace(/^./, m => m.toUpperCase());
+
+    // Fetch users from backend and populate grid
+    try {
+      const res = await fetch('./backend/users.php?action=getUsers');
+      const users = await res.json();
+      const data = users.data || [];
+
+      if (data.length > 0) {
       // Auto generate grid columns based on data keys
       const firstRow = data[0];
       const dynamicColumns = Object.keys(firstRow).map(key => ({
@@ -85,30 +134,36 @@ window.onload = async () => {
         }
       });
 
-      grid.columns = dynamicColumns;
-      grid.dataSource = data;
+        grid.columns = dynamicColumns;
+        grid.dataSource = data;
+      }
+    } catch (error) {
+      if (grid) {
+        grid.dataSource = []; // fallback if API fails
+      }
     }
-  } catch {
-    grid.dataSource = []; // fallback if API fails
-  }
 
-  // Open form for user creation
-  document.getElementById("addNewUserBtn").addEventListener("click", () => {
+    // Open form for user creation
+    const addNewUserBtn = document.getElementById("addNewUserBtn");
+    if (addNewUserBtn) {
+      addNewUserBtn.addEventListener("click", () => {
     formMode = "create";
     win.label = "Create User";
     submitBtn.textContent = "Create";
-    form.reset();
-    f("id").value = "";
-    f("firstName").value = '';
-    f("lastName").value = '';
-    f("username").value = '';
-    f("email").value ='';
-    f("address").value = '';
-    win.open();
-  });
+      form.reset();
+      f("id").value = "";
+      f("firstName").value = '';
+      f("lastName").value = '';
+      f("username").value = '';
+      f("email").value ='';
+      f("address").value = '';
+      if (win) win.open();
+    });
+    }
 
-  // Handle edit button click from grid
-  grid.addEventListener("click", (e) => {
+    // Handle edit button click from grid
+    if (grid) {
+      grid.addEventListener("click", (e) => {
     const btn = e.target.closest(".edit-btn");
 
     if (btn) {
@@ -131,14 +186,14 @@ window.onload = async () => {
       // password empty for security
       f("password").value = "";
 
-      win.open();
+        if (win) win.open();
+      }
+      });
     }
 
-
-  });
-
-  // Submit create/update form
-  submitBtn.addEventListener("click", async (e) => {
+    // Submit create/update form
+    if (submitBtn) {
+      submitBtn.addEventListener("click", async (e) => {
     e.preventDefault();
 
     const msgBox = form.querySelector(".msg");
@@ -188,10 +243,13 @@ window.onload = async () => {
         location.reload();
       }, 800);
     }
-  });
+      });
+    }
 
-  // Bulk delete selected users
-  document.getElementById("bulkDeleteBtn").addEventListener("click", async () => {
+    // Bulk delete selected users
+    const bulkDeleteBtn = document.getElementById("bulkDeleteBtn");
+    if (bulkDeleteBtn && grid) {
+      bulkDeleteBtn.addEventListener("click", async () => {
     const selected = grid.getSelection();
 
     if (!selected.rows || selected.rows.length === 0) {
@@ -205,9 +263,12 @@ window.onload = async () => {
       headers: {"Content-Type":"application/json"},
       body: JSON.stringify({ ids })
     });
-    const out = await res.json();
-    showMsg(out.message, out.status === "success");
-    if (out.status === "success") setTimeout(()=> location.reload(), 800);
-  });
+      const out = await res.json();
+      showMsg(out.message, out.status === "success");
+      if (out.status === "success") setTimeout(()=> location.reload(), 800);
+    });
+    }
 
-};
+  }); // Close waitForGrid callback
+  }
+})();
