@@ -136,10 +136,16 @@ class Resizer {
                 header.classList.remove('resizing');
             }
             
-            this.table.stateManager.saveState(
+            this.table.stateManager.saveLayoutState(
                 this.table.columnWidths,
                 this.table.columnOrder,
                 this.table.columnVisibility
+            );
+            this.table.stateManager.saveSearchPatternState(
+                this.table.sorter.sortColumn,
+                this.table.sorter.sortDirection,
+                this.table.searchValues,
+                this.table.filterOperations
             );
             this.table.render(); // Re-render to ensure consistency
         }

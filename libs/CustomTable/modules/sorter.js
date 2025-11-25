@@ -10,14 +10,20 @@ class Sorter {
         this.sortDirection = 'asc';
     }
 
-    sort(columnIndex) {
+    sort(columnIndex, preserveDirection = false) {
         // Find column by original index (accounting for visibility)
         const column = this.table.options.columns[columnIndex];
         if (!column) return;
         
-        if (this.sortColumn === columnIndex) {
+        if (preserveDirection) {
+            // When restoring from saved state, preserve the saved direction
+            this.sortColumn = columnIndex;
+            // sortDirection is already set from saved state, don't change it
+        } else if (this.sortColumn === columnIndex) {
+            // Toggle direction only when user clicks the same column
             this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
         } else {
+            // New column, start with ascending
             this.sortColumn = columnIndex;
             this.sortDirection = 'asc';
         }
@@ -54,6 +60,14 @@ class Sorter {
 
         this.table.render();
         this.updateSortIcons();
+        
+        // Save search pattern state (including sort)
+        this.table.stateManager.saveSearchPatternState(
+            this.sortColumn,
+            this.sortDirection,
+            this.table.searchValues,
+            this.table.filterOperations
+        );
     }
 
     updateSortIcons() {

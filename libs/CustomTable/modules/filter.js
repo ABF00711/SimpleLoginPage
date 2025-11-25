@@ -336,6 +336,14 @@ class Filter {
                     this.table.searchValues[colKey] = value;
                 }
                 
+                // Save search pattern state
+                this.table.stateManager.saveSearchPatternState(
+                    this.table.sorter.sortColumn,
+                    this.table.sorter.sortDirection,
+                    this.table.searchValues,
+                    this.table.filterOperations
+                );
+                
                 // Debounce filtering to avoid excessive re-renders
                 clearTimeout(debounceTimer);
                 debounceTimer = setTimeout(() => {
@@ -446,6 +454,14 @@ class Filter {
                 
                 // Update selected operation
                 this.table.filterOperations[colKey] = operation;
+                
+                // Save search pattern state
+                this.table.stateManager.saveSearchPatternState(
+                    this.table.sorter.sortColumn,
+                    this.table.sorter.sortDirection,
+                    this.table.searchValues,
+                    this.table.filterOperations
+                );
                 
                 // Update UI - remove selected class from all items, add to clicked
                 const allItems = this.table.container.querySelectorAll(`.filter-operation-item[data-column-key="${colKey}"]`);

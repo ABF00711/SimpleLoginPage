@@ -15,11 +15,14 @@ class TableModule {
         const storageKey = options.storageKey || `table_${containerId}`;
         this.stateManager = new StateManager(storageKey);
 
-        // Load saved state from localStorage (before normalizing columns)
-        const savedState = this.stateManager.loadState();
-        this.columnWidths = savedState.widths;
-        this.columnOrder = savedState.order;
-        this.columnVisibility = savedState.visibility;
+        // Load saved layout state from localStorage (before normalizing columns)
+        const savedLayoutState = this.stateManager.loadLayoutState();
+        this.columnWidths = savedLayoutState.widths;
+        this.columnOrder = savedLayoutState.order;
+        this.columnVisibility = savedLayoutState.visibility;
+        
+        // Load saved search pattern state from localStorage
+        const savedSearchPatternState = this.stateManager.loadSearchPatternState();
 
         // Initialize column manager
         this.columnManager = new ColumnManager(this.columnVisibility);
@@ -51,8 +54,10 @@ class TableModule {
         // Store original data for filtering
         this.originalData = [...(options.data || [])];
         this.filteredData = [...this.originalData];
-        this.searchValues = {};
-        this.filterOperations = {}; // Store selected filter operation per column
+        
+        // Initialize search state (load from saved state if available)
+        this.searchValues = savedSearchPatternState.searchValues || {};
+        this.filterOperations = savedSearchPatternState.filterOperations || {}; // Store selected filter operation per column
 
         // Initialize formatter
         this.formatter = Formatter;
@@ -60,6 +65,10 @@ class TableModule {
         // Initialize feature modules
         this.sorter = new Sorter(this);
         this.filter = new Filter(this);
+        
+        // Initialize sort state (load from saved state if available) - must be after sorter initialization
+        this.sorter.sortColumn = savedSearchPatternState.sortColumn || null;
+        this.sorter.sortDirection = savedSearchPatternState.sortDirection || 'asc';
         this.resizer = new Resizer(this);
         this.reorderer = new Reorderer(this);
         this.visibilityManager = new VisibilityManager(this);
@@ -73,6 +82,24 @@ class TableModule {
 
     init() {
         this.render();
+        
+        // Apply saved search pattern after render
+        if (this.options.searchable) {
+            // Apply filters if there are saved search values
+            if (Object.keys(this.searchValues).length > 0) {
+                this.filter.applyFilters();
+                this.renderer.updateDataRows();
+            }
+            
+            // Apply sort if there's a saved sort column
+            if (this.sorter.sortColumn !== null) {
+                // Sort will be applied when render completes
+                // Use preserveDirection=true to keep the saved direction (don't toggle)
+                setTimeout(() => {
+                    this.sorter.sort(this.sorter.sortColumn, true);
+                }, 0);
+            }
+        }
     }
 
     render() {
