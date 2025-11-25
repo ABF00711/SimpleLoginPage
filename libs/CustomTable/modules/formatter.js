@@ -29,7 +29,30 @@ class Formatter {
             case 'date':
                 return (value) => {
                     if (!value) return '';
-                    const date = new Date(value);
+                    
+                    let date;
+                    
+                    // If it's a string in YYYY-MM-DD format, parse as LOCAL date to avoid UTC timezone issues
+                    if (typeof value === 'string') {
+                        const isoMatch = value.match(/^(\d{4})-(\d{2})-(\d{2})/);
+                        if (isoMatch) {
+                            // Parse as local date by creating Date with explicit components
+                            // This avoids UTC interpretation: new Date('2024-01-15') interprets as UTC
+                            date = new Date(
+                                parseInt(isoMatch[1], 10),      // Year
+                                parseInt(isoMatch[2], 10) - 1,  // Month (0-indexed)
+                                parseInt(isoMatch[3], 10)       // Day
+                            );
+                        } else {
+                            // For other date string formats, try standard parsing
+                            date = new Date(value);
+                        }
+                    } else if (value instanceof Date) {
+                        date = value;
+                    } else {
+                        date = new Date(value);
+                    }
+                    
                     if (isNaN(date.getTime())) return value;
                     return date.toLocaleDateString('en-US', {
                         year: 'numeric',
@@ -42,7 +65,29 @@ class Formatter {
             case 'timestamp':
                 return (value) => {
                     if (!value) return '';
-                    const date = new Date(value);
+                    
+                    let date;
+                    
+                    // If it's a string in YYYY-MM-DD format (date only), parse as LOCAL date
+                    if (typeof value === 'string') {
+                        const isoDateMatch = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+                        if (isoDateMatch) {
+                            // Parse as local date to avoid UTC timezone issues
+                            date = new Date(
+                                parseInt(isoDateMatch[1], 10),      // Year
+                                parseInt(isoDateMatch[2], 10) - 1,  // Month (0-indexed)
+                                parseInt(isoDateMatch[3], 10)       // Day
+                            );
+                        } else {
+                            // For datetime strings (with time), use standard parsing
+                            date = new Date(value);
+                        }
+                    } else if (value instanceof Date) {
+                        date = value;
+                    } else {
+                        date = new Date(value);
+                    }
+                    
                     if (isNaN(date.getTime())) return value;
                     return date.toLocaleString('en-US', {
                         year: 'numeric',
