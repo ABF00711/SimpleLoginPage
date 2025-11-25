@@ -189,6 +189,12 @@ class TableModule {
     }
 }
 
+// Expose to global scope for script tag usage
+if (typeof window !== 'undefined') {
+    window.TableModule = TableModule;
+}
+
+// Expose to CommonJS for Node.js/require
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = TableModule;
 }

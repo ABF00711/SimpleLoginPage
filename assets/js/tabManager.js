@@ -178,16 +178,23 @@ class TabManager {
             }, 50);
 
             // Store tab data in our map
+            // IMPORTANT: Store scripts from API response (not from DOM) to ensure all scripts are saved
             const tabData = {
                 index: insertIndex,
                 pageName: pageName,
                 label: label,
                 content: data.content || '',
                 modals: data.modals || '',
-                scripts: data.scripts || []
+                scripts: data.scripts || [], // Use scripts from API, not from DOM
+                styles: data.styles || []
             };
 
             this.tabMap.set(pageName, tabData);
+            
+            // Log for debugging
+            if (pageName === 'customers' && data.scripts) {
+                console.log(`Saved ${data.scripts.length} scripts for customers tab:`, data.scripts);
+            }
 
             // Inject modals into the tab content container
             if (data.modals) {
@@ -197,9 +204,19 @@ class TabManager {
             // Select the new tab
             this.tabs.select(insertIndex);
 
-            // Load page-specific scripts
+            // Load page-specific styles
+            if (data.styles && data.styles.length > 0) {
+                this.loadTabStyles(insertIndex, data.styles);
+            }
+
+            // Load page-specific scripts and wait for them (ensures TableModule is ready)
             if (data.scripts && data.scripts.length > 0) {
-                this.loadTabScripts(insertIndex, data.scripts);
+                await this.loadTabScripts(insertIndex, data.scripts);
+                
+                // Initialize page-specific code AFTER scripts are loaded
+                if (pageName === 'customers' && typeof window.initCustomersTable === 'function') {
+                    window.initCustomersTable();
+                }
             }
 
             // Save state to localStorage
@@ -256,21 +273,127 @@ class TabManager {
     }
 
     /**
+     * Load styles for a specific tab
+     */
+    loadTabStyles(tabIndex, stylePaths) {
+        // Remove old styles for this tab
+        const oldStyles = document.querySelectorAll(`link[data-tab-index="${tabIndex}"]`);
+        oldStyles.forEach(style => style.remove());
+
+        // Load new styles
+        stylePaths.forEach(stylePath => {
+            // Check if this style is already loaded globally (avoid duplicates)
+            const existingStyle = document.querySelector(`link[href*="${stylePath}"]`);
+            if (existingStyle && !existingStyle.hasAttribute('data-tab-index')) {
+                // Style is already loaded globally, skip it
+                return;
+            }
+
+            const link = document.createElement('link');
+            link.rel = 'stylesheet';
+            // Handle absolute paths (starting with libs/ or /)
+            if (stylePath.startsWith('libs/') || stylePath.startsWith('/')) {
+                link.href = `./${stylePath}`;
+            } else {
+                link.href = `./assets/css/${stylePath}`;
+            }
+            link.setAttribute('data-tab-index', tabIndex);
+            link.setAttribute('data-page-style', 'true');
+            document.head.appendChild(link);
+        });
+    }
+
+    /**
      * Load scripts for a specific tab
+     * Loads scripts SEQUENTIALLY to ensure proper execution order
+     * Returns a Promise that resolves when all scripts are loaded
      */
     loadTabScripts(tabIndex, scriptPaths) {
         // Remove old scripts for this tab
         const oldScripts = document.querySelectorAll(`script[data-tab-index="${tabIndex}"]`);
         oldScripts.forEach(script => script.remove());
 
-        // Load new scripts
-        scriptPaths.forEach(scriptPath => {
-            const script = document.createElement('script');
-            script.src = `./assets/js/${scriptPath}`;
-            script.setAttribute('data-tab-index', tabIndex);
-            script.setAttribute('data-page-script', 'true');
-            document.body.appendChild(script);
-        });
+        if (!scriptPaths || scriptPaths.length === 0) {
+            return Promise.resolve();
+        }
+
+        // Load scripts SEQUENTIALLY (one after another) to ensure proper order
+        return scriptPaths.reduce((promise, scriptPath) => {
+            return promise.then(() => {
+                return new Promise((resolve, reject) => {
+                    const script = document.createElement('script');
+                    // Handle absolute paths (starting with libs/ or /)
+                    if (scriptPath.startsWith('libs/') || scriptPath.startsWith('/')) {
+                        script.src = `./${scriptPath}`;
+                    } else {
+                        script.src = `./assets/js/${scriptPath}`;
+                    }
+                    script.setAttribute('data-tab-index', tabIndex);
+                    script.setAttribute('data-page-script', 'true');
+                    
+                    // Log script loading (for debugging)
+                    if (scriptPath.includes('table-module.js')) {
+                        console.log(`Loading table-module.js from: ${script.src}`);
+                    }
+                    
+                    // Wait for script to load AND execute
+                    script.addEventListener('load', () => {
+                        // For table-module.js, verify TableModule is actually available
+                        if (scriptPath.includes('table-module.js')) {
+                            // The load event fires after script execution
+                            // Use setTimeout(0) to ensure we're in the next event loop tick
+                            setTimeout(() => {
+                                // Check if TableModule is available (check window.TableModule specifically)
+                                if (typeof window.TableModule !== 'undefined') {
+                                    console.log('✓ TableModule loaded successfully');
+                                    resolve();
+                                } else {
+                                    // If not available, wait a bit more (script might still be executing)
+                                    const maxChecks = 20;
+                                    let checkCount = 0;
+                                    const checkInterval = setInterval(() => {
+                                        checkCount++;
+                                        if (typeof window.TableModule !== 'undefined') {
+                                            clearInterval(checkInterval);
+                                            console.log('✓ TableModule loaded after polling');
+                                            resolve();
+                                        } else if (checkCount >= maxChecks) {
+                                            clearInterval(checkInterval);
+                                            console.error('✗ TableModule not available after table-module.js loaded');
+                                            console.error('Script src:', script.src);
+                                            console.error('Script complete:', script.complete);
+                                            console.error('window.TableModule:', typeof window.TableModule);
+                                            reject(new Error('TableModule failed to load - window.TableModule is undefined'));
+                                        }
+                                    }, 50);
+                                }
+                            }, 0);
+                        } else {
+                            // For other scripts, small delay to ensure execution
+                            requestAnimationFrame(() => {
+                                requestAnimationFrame(() => resolve());
+                            });
+                        }
+                    }, { once: true });
+                    
+                    script.addEventListener('error', (e) => {
+                        console.error(`✗ Failed to load script: ${scriptPath}`, e);
+                        reject(new Error(`Failed to load script: ${scriptPath}`));
+                    });
+                    
+                    // Also listen for script execution errors
+                    window.addEventListener('error', function onError(e) {
+                        if (e.filename && e.filename.includes(scriptPath.split('/').pop())) {
+                            console.error(`✗ Script execution error in ${scriptPath}:`, e.message);
+                            window.removeEventListener('error', onError);
+                            // Don't reject here - let the load handler deal with it
+                        }
+                    }, { once: true });
+                    
+                    document.body.appendChild(script);
+                });
+            });
+        }, Promise.resolve());
     }
 
     /**
@@ -360,21 +483,31 @@ class TabManager {
             .sort((a, b) => a[1].index - b[1].index);
 
         sortedTabs.forEach(([pageName, tabData]) => {
-            // Get scripts for this tab
-            const scripts = Array.from(document.querySelectorAll(`script[data-tab-index="${tabData.index}"]`))
+            // Get scripts for this tab from DOM
+            const scriptsFromDOM = Array.from(document.querySelectorAll(`script[data-tab-index="${tabData.index}"]`))
                 .map(script => {
                     const src = script.src;
-                    const match = src.match(/\/assets\/js\/(.+)$/);
-                    return match ? match[1] : '';
+                    // Extract relative path from full URL
+                    // Match both /assets/js/ and /libs/ paths
+                    const assetsMatch = src.match(/\/assets\/js\/(.+)$/);
+                    const libsMatch = src.match(/\/libs\/(.+)$/);
+                    if (libsMatch) {
+                        return `libs/${libsMatch[1]}`;
+                    } else if (assetsMatch) {
+                        return assetsMatch[1];
+                    }
+                    return '';
                 })
                 .filter(s => s);
 
+            // Use scripts from DOM if available, otherwise use saved scripts
             tabs.push({
                 pageName: pageName,
                 label: tabData.label,
                 content: tabData.content,
                 modals: tabData.modals || '',
-                scripts: scripts.length > 0 ? scripts : (tabData.scripts || [])
+                scripts: scriptsFromDOM.length > 0 ? scriptsFromDOM : (tabData.scripts || []),
+                styles: tabData.styles || []
             });
         });
 
@@ -458,9 +591,38 @@ class TabManager {
                         }, 150);
                     }
 
-                    // Load scripts
+                    // Load styles
+                    if (tabData.styles && tabData.styles.length > 0) {
+                        this.loadTabStyles(insertIndex, tabData.styles);
+                    }
+
+                    // Load scripts and WAIT for them to finish (critical for TableModule)
                     if (tabData.scripts && tabData.scripts.length > 0) {
-                        this.loadTabScripts(insertIndex, tabData.scripts);
+                        console.log(`Loading ${tabData.scripts.length} scripts for ${tabData.pageName}:`, tabData.scripts);
+                        try {
+                            await this.loadTabScripts(insertIndex, tabData.scripts);
+                            console.log(`✓ All scripts loaded for ${tabData.pageName}`);
+                            
+                            // Verify TableModule is available before initializing
+                            if (tabData.pageName === 'customers') {
+                                if (typeof window.TableModule !== 'undefined') {
+                                    console.log('✓ TableModule verified before initialization');
+                                    if (typeof window.initCustomersTable === 'function') {
+                                        window.initCustomersTable();
+                                    } else {
+                                        console.error('✗ initCustomersTable function not found');
+                                    }
+                                } else {
+                                    console.error('✗ TableModule not available after scripts loaded');
+                                    console.error('Available on window:', Object.keys(window).filter(k => k.includes('Table')));
+                                }
+                            }
+                        } catch (error) {
+                            console.error(`Error loading scripts for ${tabData.pageName}:`, error);
+                            // Don't initialize if scripts failed to load
+                        }
+                    } else {
+                        console.warn(`No scripts to load for ${tabData.pageName}`);
                     }
                 } catch (error) {
                     console.error(`Error restoring tab ${i}:`, error);

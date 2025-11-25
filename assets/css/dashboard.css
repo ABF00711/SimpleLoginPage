@@ -263,11 +263,6 @@ smart-menu{
   margin: 0;
 }
 
-/* ===== CARD override size===== */
-.card {
-  width: 1000px;
-}
-
 /* ===== SMART GRID ===== */
 smart-grid {
   height: 400px;

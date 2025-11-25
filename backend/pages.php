@@ -91,6 +91,7 @@ echo json_encode([
     'status' => 'success',
     'content' => $content,
     'modals' => $additionalHTML ?? '',
-    'scripts' => $pageScripts ?? []
+    'scripts' => $pageScripts ?? [],
+    'styles' => $pageStyles ?? []
 ], JSON_UNESCAPED_SLASHES);
 
