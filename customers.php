@@ -25,16 +25,7 @@ $pageScripts = [
 ob_start();
 ?>
 
-<div class="card">
-  <!-- Button to open the Add User modal -->
-  <div class="add-user-button" style="display:flex; gap:10px;">
-    <smart-button id="bulkDeleteBtn" type="button" class="error">Delete Selected</smart-button>
-    <smart-button id="addNewUserBtn" type="button" class="primary">Add user</smart-button>
-  </div>
-  <!-- CustomTable container -->
-  <div id="customers-table"></div>
-
-</div>
+<div id="customers-table"></div>
 
 <?php
 // Capture main content
