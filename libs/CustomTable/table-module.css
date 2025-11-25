@@ -10,8 +10,7 @@
     overflow-y: auto;
     margin: 1rem 0;
     width: 100%;
-    min-height: 600px;
-    max-height: calc(100vh - 200px); /* Allow vertical scrolling when content exceeds viewport */
+    height: calc(100vh - 350px);
 }
 
 /* Scrollbar styling for both horizontal and vertical */
