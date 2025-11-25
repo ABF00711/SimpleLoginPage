@@ -35,7 +35,7 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
 </head>
 
 <body>
-  <div class="card">
+  <div class="login-card">
     <h2>Login</h2>
 
     <!-- Login Form -->

@@ -24,6 +24,14 @@ body {
   width: 100%;
 }
 
+.login-card {
+  background: white;
+  padding: 20px 50px;
+  border-radius: 12px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+  max-width: 600px;
+}
+
 /* ==== Shared headings ==== */
 h2 {
   text-align: center;
