@@ -413,7 +413,7 @@
     padding: 0 12px;
     border-bottom: 1px solid #e0e0e0;
     color: #34495e;
-    vertical-align: top;
+    vertical-align: middle;
     box-sizing: border-box;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -422,6 +422,7 @@
     line-height: 35px;
     font-size: 14px;
     text-transform: none; /* Preserve original text case */
+    text-align: center; /* Center align cell values */
 }
 
 /* Search Row Styles */
