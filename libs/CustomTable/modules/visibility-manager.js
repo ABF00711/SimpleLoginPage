@@ -87,11 +87,78 @@ class VisibilityManager {
         const dropdown = this.table.container.querySelector('.hidden-columns-dropdown');
         
         if (showColumnsBtn && dropdown) {
-            // Toggle dropdown on button click
-            showColumnsBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
+            // Function to toggle dropdown
+            const toggleDropdown = (e) => {
+                if (e) {
+                    e.stopPropagation();
+                }
                 dropdown.classList.toggle('show');
-            });
+            };
+
+            // Handle Smart UI button click
+            if (showColumnsBtn.tagName === 'SMART-BUTTON') {
+                // Wait for Smart UI to upgrade the button
+                const attachSmartButtonClick = () => {
+                    // Method 1: Use Smart UI's onClick property (preferred for Smart UI)
+                    if (showColumnsBtn.onClick !== undefined) {
+                        const originalOnClick = showColumnsBtn.onClick;
+                        showColumnsBtn.onClick = (e) => {
+                            if (originalOnClick) {
+                                originalOnClick.call(showColumnsBtn, e);
+                            }
+                            toggleDropdown(e);
+                        };
+                    }
+                    
+                    // Method 2: Also use addEventListener as fallback
+                    showColumnsBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        toggleDropdown(e);
+                    });
+                    
+                    // Method 3: Handle clicks on child elements (icon, text)
+                    const icon = showColumnsBtn.querySelector('.show-columns-icon');
+                    const text = showColumnsBtn.querySelector('.show-columns-text');
+                    
+                    if (icon) {
+                        icon.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            toggleDropdown(e);
+                        });
+                    }
+                    if (text) {
+                        text.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            toggleDropdown(e);
+                        });
+                    }
+                };
+
+                // Wait for Smart UI to be ready and button to be upgraded
+                const waitForSmartUI = (attempts = 0) => {
+                    if (attempts > 20) {
+                        // Fallback: attach anyway after max attempts
+                        attachSmartButtonClick();
+                        return;
+                    }
+                    
+                    if (typeof Smart !== 'undefined' && Smart.elements) {
+                        // Give Smart UI a moment to upgrade the element
+                        setTimeout(() => {
+                            attachSmartButtonClick();
+                        }, 150);
+                    } else {
+                        // Retry if Smart UI is not ready yet
+                        setTimeout(() => waitForSmartUI(attempts + 1), 50);
+                    }
+                };
+
+                // Start waiting for Smart UI
+                waitForSmartUI();
+            } else {
+                // Regular button, attach immediately
+                showColumnsBtn.addEventListener('click', toggleDropdown);
+            }
 
             // Close dropdown when clicking outside
             document.addEventListener('click', (e) => {

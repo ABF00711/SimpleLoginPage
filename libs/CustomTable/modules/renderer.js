@@ -54,16 +54,19 @@ class Renderer {
 
         this.table.container.innerHTML = html;
 
-        // Attach event listeners
-        this.attachEventListeners();
+        // Smart UI elements auto-upgrade, but ensure they're ready
+        requestAnimationFrame(() => {
+            // Attach event listeners after DOM is ready
+            this.attachEventListeners();
+        });
     }
 
     renderHiddenColumnsMenu(allColumns) {
         let html = '<div class="hidden-columns-menu">';
-        html += '<button class="show-columns-btn" type="button" title="Show/Hide columns">';
+        html += '<smart-button class="show-columns-btn" title="Show/Hide columns">';
         html += '<span class="show-columns-icon">👁</span>';
         html += '<span class="show-columns-text">Hide</span>';
-        html += '</button>';
+        html += '</smart-button>';
         html += '<div class="hidden-columns-dropdown">';
         
         // Render all columns with checkboxes

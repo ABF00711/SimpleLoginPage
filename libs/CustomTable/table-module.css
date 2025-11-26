@@ -246,41 +246,46 @@
     margin-bottom: 1rem;
 }
 
+/* Smart UI button styling */
 .show-columns-btn {
     display: inline-flex;
     align-items: center;
     gap: 0.5rem;
-    padding: 0.375rem 0.75rem;
-    background-color: #4a90e2;
-    border: none;
+    background-color: #4a90e2 !important;
+    border: none !important;
     border-radius: 4px;
-    cursor: pointer;
+    padding: 0.375rem 0.75rem;
     font-size: 0.875rem;
-    color: #ffffff;
+    color: #ffffff !important;
     transition: all 0.2s ease;
     font-weight: 500;
+    cursor: pointer;
 }
 
 .show-columns-btn:hover {
-    background-color: #357abd;
+    background-color: #357abd !important;
 }
 
-.show-columns-btn:active {
-    background-color: #2a5f8f;
+.show-columns-btn:active,
+.show-columns-btn:focus {
+    background-color: #2a5f8f !important;
+    outline: none;
 }
 
 .show-columns-icon {
-    font-size: 0.875rem;
+    font-size: 1rem;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 16px;
-    height: 16px;
+    width: 20px;
+    height: 20px;
+    margin-right: 0.25rem;
 }
 
 .show-columns-text {
     font-size: 0.875rem;
-    color: #ffffff;
+    color: #ffffff !important;
+    font-weight: 500;
 }
 
 .hidden-columns-dropdown {
