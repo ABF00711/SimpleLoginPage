@@ -115,6 +115,7 @@
     height: 35px !important;
     line-height: 35px;
     font-size: 14px;
+    text-transform: none; /* Preserve original text case */
 }
 
 .table-header-inner {
@@ -415,6 +416,7 @@
     height: 35px !important;
     line-height: 35px;
     font-size: 14px;
+    text-transform: none; /* Preserve original text case */
 }
 
 /* Search Row Styles */

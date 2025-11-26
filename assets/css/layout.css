@@ -60,6 +60,7 @@ smart-tabs .smart-tabs-content {
   overflow-y: auto;
   margin: 0;
   border-radius: 0;
+  text-transform: none; /* Preserve original text case for table content */
 }
 
 /* Adjust card styling within tab content */
