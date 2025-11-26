@@ -26,29 +26,29 @@ $pageScripts = $pageScripts ?? [];
 <title><?php echo htmlspecialchars($pageTitle); ?></title>
 
 <!-- Favicon -->
-<link rel="icon" type="image/png" href="./assets/image/logo.png">
+<link rel="icon" type="image/png" href="./frontend/assets/image/logo.png">
 
 <!-- Global styles -->
-<link rel="stylesheet" href="./assets/css/style.css">
-<link rel="stylesheet" href="./assets/css/dashboard.css">
+<link rel="stylesheet" href="./frontend/assets/css/style.css">
+<link rel="stylesheet" href="./frontend/assets/css/dashboard.css">
 
 <?php foreach ($pageStyles as $style): ?>
 <?php if (strpos($style, 'libs/') === 0 || strpos($style, '/') === 0): ?>
-<link rel="stylesheet" href="./<?php echo htmlspecialchars($style); ?>">
+<link rel="stylesheet" href="./frontend/<?php echo htmlspecialchars($style); ?>">
 <?php else: ?>
-<link rel="stylesheet" href="./assets/css/<?php echo htmlspecialchars($style); ?>">
+<link rel="stylesheet" href="./frontend/assets/css/<?php echo htmlspecialchars($style); ?>">
 <?php endif; ?>
 <?php endforeach; ?>
 
-<link rel="stylesheet" href="./libs/smart-ui/source/styles/smart.default.css">
-<link rel="stylesheet" href="./assets/css/layout.css">
+<link rel="stylesheet" href="./frontend/libs/smart-ui/source/styles/smart.default.css">
+<link rel="stylesheet" href="./frontend/assets/css/layout.css">
 
 <script>
   window.Smart = window.Smart || {};
   window.Smart.License = "0A2C72B9-D78F-5E17-8D07-0CBC0E1EDC29";
 </script>
 
-<script src="./libs/smart-ui/source/smart.elements.js"></script>
+<script src="./frontend/libs/smart-ui/source/smart.elements.js"></script>
 
 </head>
 
@@ -66,15 +66,15 @@ $pageScripts = $pageScripts ?? [];
   }
   ?>
 
-  <script src="./assets/js/router.js"></script>
-  <script src="./assets/js/tabManager.js"></script>
-  <script src="./assets/js/menu.js"></script>
+  <script src="./frontend/assets/js/router.js"></script>
+  <script src="./frontend/assets/js/tabManager.js"></script>
+  <script src="./frontend/assets/js/menu.js"></script>
   
   <?php foreach ($pageScripts as $script): ?>
   <?php if (strpos($script, 'libs/') === 0 || strpos($script, '/') === 0): ?>
-  <script src="./<?php echo htmlspecialchars($script); ?>"></script>
+  <script src="./frontend/<?php echo htmlspecialchars($script); ?>"></script>
   <?php else: ?>
-  <script src="./assets/js/<?php echo htmlspecialchars($script); ?>"></script>
+  <script src="./frontend/assets/js/<?php echo htmlspecialchars($script); ?>"></script>
   <?php endif; ?>
   <?php endforeach; ?>
 

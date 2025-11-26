@@ -6,7 +6,7 @@
 <header>
   <div class="header-left">
     <div class="appIcon">
-      <img src="./assets/image/logo.png" alt="BeornNotes Logo">
+      <img src="./frontend/assets/image/logo.png" alt="BeornNotes Logo">
     </div>
     <h1 class="app-title">BeornNotes</h1>
   </div>
@@ -25,7 +25,7 @@
             <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
             <circle cx="12" cy="7" r="4"></circle>
           </svg>
-          <a href="./profile.php">Profile</a>
+          <a href="./frontend/views/profile.php">Profile</a>
         </smart-list-item>
         <smart-list-item value="logout" class="dropdown-item logout-item">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -33,7 +33,7 @@
             <polyline points="16 17 21 12 16 7"></polyline>
             <line x1="21" y1="12" x2="9" y2="12"></line>
           </svg>
-          <a href="./logout.php">Logout</a>
+          <a href="../views/logout.php">Logout</a>
         </smart-list-item>
       </smart-drop-down-list>
     </div>

@@ -35,8 +35,8 @@ $menu = $result->fetch_all(MYSQLI_ASSOC);
 
 $allowedPages = array_column($menu, 'path');
 
-// Map page names to their PHP files
-$pageFile = __DIR__ . '/../' . $pageName . '.php';
+// Map page names to their PHP files (pages are now in frontend/views/)
+$pageFile = __DIR__ . '/../frontend/views/' . $pageName . '.php';
 
 if (!file_exists($pageFile)) {
     http_response_code(404);

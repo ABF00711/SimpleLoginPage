@@ -1,21 +1,17 @@
 <?php
-// Page configuration
-$pageTitle = 'Dashboard';
-$pageScripts = ['dashboard.js'];
+/**
+ * Dashboard Entry Point
+ * Redirects to the main application entry point
+ */
 
-// Start output buffering to capture page content
-ob_start();
-?>
+session_start();
 
-<div class="card">
-  <h2>Dashboard</h2>
-</div>
+// Check if user is logged in
+if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
+    header("Location: index.php");
+    exit;
+}
 
-<?php
-// Capture main content
-$content = ob_get_clean();
+// Load the dashboard view
+require __DIR__ . '/frontend/views/dashboard.php';
 
-
-// Include the layout
-require __DIR__ . '/includes/layout.php';
-?>

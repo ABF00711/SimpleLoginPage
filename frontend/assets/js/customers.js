@@ -73,7 +73,7 @@
             container.innerHTML = '<div style="padding: 20px; text-align: center; color: #666;">Loading table...</div>';
             
             // Fetch table data
-            const response = await fetch(`backend/table-data.php?formName=${encodeURIComponent(formName)}`);
+            const response = await fetch(`./backend/table-data.php?formName=${encodeURIComponent(formName)}`);
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }

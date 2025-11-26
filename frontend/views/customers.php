@@ -32,5 +32,5 @@ ob_start();
 $content = ob_get_clean();
 
 // Include the layout
-require __DIR__ . '/includes/layout.php';
+require __DIR__ . '/../includes/layout.php';
 ?>

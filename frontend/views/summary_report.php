@@ -1,7 +1,7 @@
 <?php
 // Page configuration
-$pageTitle = 'Orders';
-$pageStyles = ['orders.css'];
+$pageTitle = 'Summary Report';
+$pageStyles = ['summary_report.css'];
 $pageScripts = [];
 
 // Start output buffering to capture page content
@@ -9,7 +9,7 @@ ob_start();
 ?>
 
 <div class="card">
-  <h2>User Orders</h2>
+  <h2>Summary Report</h2>
 </div>
 
 <?php
@@ -17,5 +17,5 @@ ob_start();
 $content = ob_get_clean();
 
 // Include the layout
-require __DIR__ . '/includes/layout.php';
+require __DIR__ . '/../includes/layout.php';
 ?>

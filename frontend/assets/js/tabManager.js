@@ -315,9 +315,9 @@ class TabManager {
             link.rel = 'stylesheet';
             // Handle absolute paths (starting with libs/ or /)
             if (stylePath.startsWith('libs/') || stylePath.startsWith('/')) {
-                link.href = `./${stylePath}`;
+                link.href = `./frontend/${stylePath}`;
             } else {
-                link.href = `./assets/css/${stylePath}`;
+                link.href = `./frontend/assets/css/${stylePath}`;
             }
             link.setAttribute('data-tab-index', tabIndex);
             link.setAttribute('data-page-style', 'true');
@@ -346,9 +346,9 @@ class TabManager {
                     const script = document.createElement('script');
                     // Handle absolute paths (starting with libs/ or /)
                     if (scriptPath.startsWith('libs/') || scriptPath.startsWith('/')) {
-                        script.src = `./${scriptPath}`;
+                        script.src = `./frontend/${scriptPath}`;
                     } else {
-                        script.src = `./assets/js/${scriptPath}`;
+                        script.src = `./frontend/assets/js/${scriptPath}`;
                     }
                     script.setAttribute('data-tab-index', tabIndex);
                     script.setAttribute('data-page-script', 'true');
@@ -510,10 +510,17 @@ class TabManager {
                 .map(script => {
                     const src = script.src;
                     // Extract relative path from full URL
-                    // Match both /assets/js/ and /libs/ paths
+                    // Match both /frontend/assets/js/ and /frontend/libs/ paths
+                    const frontendAssetsMatch = src.match(/\/frontend\/assets\/js\/(.+)$/);
+                    const frontendLibsMatch = src.match(/\/frontend\/libs\/(.+)$/);
+                    // Also support old paths for backward compatibility
                     const assetsMatch = src.match(/\/assets\/js\/(.+)$/);
                     const libsMatch = src.match(/\/libs\/(.+)$/);
-                    if (libsMatch) {
+                    if (frontendLibsMatch) {
+                        return `libs/${frontendLibsMatch[1]}`;
+                    } else if (frontendAssetsMatch) {
+                        return frontendAssetsMatch[1];
+                    } else if (libsMatch) {
                         return `libs/${libsMatch[1]}`;
                     } else if (assetsMatch) {
                         return assetsMatch[1];

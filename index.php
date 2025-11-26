@@ -16,13 +16,13 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
   <title>Smart UI Hybrid Login</title>
 
   <!-- Favicon -->
-  <link rel="icon" type="image/png" href="./assets/image/logo.png">
+  <link rel="icon" type="image/png" href="./frontend/assets/image/logo.png">
   <!-- Main global styles -->
-  <link rel="stylesheet" href="./assets/css/style.css">
+  <link rel="stylesheet" href="./frontend/assets/css/style.css">
   <!-- Page-specific styles -->
-  <link rel="stylesheet" href="./assets/css/login.css" />
+  <link rel="stylesheet" href="./frontend/assets/css/login.css" />
   <!-- Smart UI Components style -->
-  <link rel="stylesheet" href="./libs/smart-ui/source/styles/smart.default.css"/>
+  <link rel="stylesheet" href="./frontend/libs/smart-ui/source/styles/smart.default.css"/>
 
   <!-- Smart UI License and script initialization -->
   <script>
@@ -31,7 +31,7 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
   </script>
 
   <!-- Smart UI library -->
-  <script src="./libs/smart-ui/source/smart.elements.js"></script>
+  <script src="./frontend/libs/smart-ui/source/smart.elements.js"></script>
 </head>
 
 <body>
@@ -84,7 +84,7 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
   </div>
 
   <!-- Login page logic -->
-  <script src="./assets/js/login.js"></script>
+  <script src="./frontend/assets/js/login.js"></script>
 </body>
 </html>
 
