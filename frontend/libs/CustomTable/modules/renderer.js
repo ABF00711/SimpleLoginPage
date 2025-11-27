@@ -63,10 +63,20 @@ class Renderer {
 
     renderHiddenColumnsMenu(allColumns) {
         let html = '<div class="hidden-columns-menu">';
+        html += '<div class="table-action-buttons">';
+        html += '<button type="button" class="table-add-btn" title="Add row">';
+        html += '<span class="table-btn-icon table-icon-add"></span>';
+        html += '<span class="table-btn-text">Add</span>';
+        html += '</button>';
+        html += '<button type="button" class="table-delete-btn" title="Delete selected rows">';
+        html += '<span class="table-btn-icon table-icon-delete"></span>';
+        html += '<span class="table-btn-text">Delete</span>';
+        html += '</button>';
         html += '<button type="button" class="show-columns-btn" title="Show/Hide columns">';
-        html += '<span class="show-columns-icon">👁</span>';
+        html += '<span class="show-columns-icon table-icon-eye"></span>';
         html += '<span class="show-columns-text">Hide</span>';
         html += '</button>';
+        html += '</div>';
         html += '<div class="hidden-columns-dropdown">';
         
         // Render all columns with checkboxes
@@ -305,6 +315,9 @@ class Renderer {
         if (this.table.options.selectable) {
             this.attachCheckboxListeners();
         }
+        
+        // Attach Add and Delete button handlers
+        this.attachActionButtons();
     }
 
     attachCheckboxListeners() {
@@ -418,6 +431,67 @@ class Renderer {
                 tbody.appendChild(fragment);
             }
         }
+    }
+
+    attachActionButtons() {
+        const addBtn = this.table.container.querySelector('.table-add-btn');
+        const deleteBtn = this.table.container.querySelector('.table-delete-btn');
+
+        if (addBtn) {
+            addBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.handleAddClick();
+            });
+        }
+
+        if (deleteBtn) {
+            deleteBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.handleDeleteClick();
+            });
+        }
+    }
+
+    handleAddClick() {
+        // Dispatch custom event for Add action
+        const event = new CustomEvent('tableAdd', {
+            detail: {
+                table: this.table
+            }
+        });
+        this.table.container.dispatchEvent(event);
+    }
+
+    handleDeleteClick() {
+        // Get selected rows
+        const selectedRows = Array.from(this.table.selectedRows || []);
+        
+        if (selectedRows.length === 0) {
+            // Dispatch event even if no rows selected (parent can show message)
+            const event = new CustomEvent('tableDelete', {
+                detail: {
+                    table: this.table,
+                    selectedRows: [],
+                    selectedData: []
+                }
+            });
+            this.table.container.dispatchEvent(event);
+            return;
+        }
+
+        // Get selected data
+        const dataToUse = this.table.options.searchable ? this.table.filteredData : this.table.options.data;
+        const selectedData = selectedRows.map(index => dataToUse[index]);
+
+        // Dispatch custom event for Delete action
+        const event = new CustomEvent('tableDelete', {
+            detail: {
+                table: this.table,
+                selectedRows: selectedRows,
+                selectedData: selectedData
+            }
+        });
+        this.table.container.dispatchEvent(event);
     }
 }
 

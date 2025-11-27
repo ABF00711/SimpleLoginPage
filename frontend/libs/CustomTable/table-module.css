@@ -246,6 +246,12 @@
     margin-bottom: 1rem;
 }
 
+.table-action-buttons {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
 /* Smart UI button styling */
 .show-columns-btn {
     display: inline-flex;
@@ -282,7 +288,107 @@
     margin-right: 0.25rem;
 }
 
+/* Icon classes using Smart UI icon font */
+.table-icon-add::before,
+.table-icon-delete::before,
+.table-icon-eye::before {
+    font-family: var(--smart-font-family-icon);
+    font-style: normal;
+    font-weight: normal;
+    font-variant: normal;
+    text-transform: none;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+.table-icon-add::before {
+    content: var(--smart-icon-plus);
+}
+
+.table-icon-delete::before {
+    content: var(--smart-icon-delete);
+}
+
+.table-icon-eye::before {
+    content: var(--smart-icon-visibility);
+}
+
 .show-columns-text {
+    font-size: 0.875rem;
+    color: #ffffff !important;
+    font-weight: 500;
+}
+
+/* Add and Delete button styling */
+.table-add-btn,
+.table-delete-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    border: none !important;
+    border-radius: 4px;
+    padding: 0.375rem 0.75rem;
+    font-size: 0.875rem;
+    color: #ffffff !important;
+    transition: all 0.2s ease;
+    font-weight: 500;
+    cursor: pointer;
+}
+
+.table-add-btn {
+    background-color: #28a745 !important;
+}
+
+.table-add-btn:hover {
+    background-color: #218838 !important;
+}
+
+.table-add-btn:active,
+.table-add-btn:focus {
+    background-color: #1e7e34 !important;
+    outline: none;
+}
+
+.table-delete-btn {
+    background-color: #dc3545 !important;
+}
+
+.table-delete-btn:hover {
+    background-color: #c82333 !important;
+}
+
+.table-delete-btn:active,
+.table-delete-btn:focus {
+    background-color: #bd2130 !important;
+    outline: none;
+}
+
+.table-delete-btn:disabled {
+    background-color: #6c757d !important;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.table-btn-icon {
+    font-size: 1rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+}
+
+.table-btn-icon::before {
+    font-family: var(--smart-font-family-icon);
+    font-style: normal;
+    font-weight: normal;
+    font-variant: normal;
+    text-transform: none;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+.table-btn-text {
     font-size: 0.875rem;
     color: #ffffff !important;
     font-weight: 500;
