@@ -63,10 +63,10 @@ class Renderer {
 
     renderHiddenColumnsMenu(allColumns) {
         let html = '<div class="hidden-columns-menu">';
-        html += '<smart-button class="show-columns-btn" title="Show/Hide columns">';
+        html += '<button type="button" class="show-columns-btn" title="Show/Hide columns">';
         html += '<span class="show-columns-icon">👁</span>';
         html += '<span class="show-columns-text">Hide</span>';
-        html += '</smart-button>';
+        html += '</button>';
         html += '<div class="hidden-columns-dropdown">';
         
         // Render all columns with checkboxes
