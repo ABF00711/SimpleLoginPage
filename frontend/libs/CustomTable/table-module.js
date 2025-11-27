@@ -111,6 +111,10 @@ class TableModule {
 
     // Public API methods
     updateData(newData) {
+        // Save current sort state before updating
+        const savedSortColumn = this.sorter.sortColumn;
+        const savedSortDirection = this.sorter.sortDirection;
+        
         this.originalData = [...newData];
         this.options.data = newData;
         // Reapply filters if searchable is enabled
@@ -120,6 +124,17 @@ class TableModule {
             this.filteredData = [...newData];
         }
         this.render();
+        
+        // Reapply sort state after render (similar to init method)
+        // Sort should be applied regardless of searchable option
+        if (savedSortColumn !== null && this.options.sortable) {
+            setTimeout(() => {
+                // Restore sort direction and apply sort
+                this.sorter.sortColumn = savedSortColumn;
+                this.sorter.sortDirection = savedSortDirection;
+                this.sorter.sort(savedSortColumn, true);
+            }, 0);
+        }
     }
 
     updateColumns(newColumns) {

@@ -83,11 +83,14 @@
                 throw new Error(result.message);
             }
             
+            // Store formName in a variable accessible to the callback
+            const currentFormName = formName;
+            
             // Initialize CustomTable
             const customersTable = new TableModuleClass('customers-table', {
                 data: result.data,
                 columns: result.columns,
-                storageKey: `table_customers_${formName}`,
+                storageKey: `table_customers_${currentFormName}`,
                 sortable: true,
                 resizable: true,
                 reorderable: true,
@@ -96,17 +99,66 @@
                 striped: true,
                 hover: true,
                 selectable: true,
-                onDelete: (selectedRows, selectedData) => {
-                    console.log('Delete callback called:', {
-                        selectedRows: selectedRows,
-                        selectedData: selectedData,
-                        count: selectedRows.length
-                    });
-                    // TODO: Implement delete logic here
-                    // Example:
-                    // if (confirm(`Are you sure you want to delete ${selectedRows.length} row(s)?`)) {
-                    //     // Call your delete API
-                    // }
+                onDelete: async (selectedRows, selectedData) => {
+                    if (selectedRows.length === 0) {
+                        return;
+                    }
+                    
+                    // Confirm deletion
+                    if (!confirm(`Are you sure you want to delete ${selectedRows.length} row(s)?`)) {
+                        return;
+                    }
+                    
+                    try {
+                        // Call delete API
+                        const response = await fetch('./backend/table-data.php', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                action: 'delete',
+                                formName: currentFormName,
+                                rows: selectedData
+                            })
+                        });
+                        
+                        if (!response.ok) {
+                            const errorText = await response.text();
+                            throw new Error(`HTTP error! status: ${response.status}, body: ${errorText}`);
+                        }
+                        
+                        const result = await response.json();
+                        
+                        if (result.status === 'success') {
+                            console.log('Delete successful:', result);
+                            
+                            // Clear selected rows
+                            customersTable.selectedRows.clear();
+                            
+                            // Reload table data
+                            const dataResponse = await fetch(`./backend/table-data.php?formName=${encodeURIComponent(currentFormName)}`);
+                            if (!dataResponse.ok) {
+                                throw new Error(`HTTP error! status: ${dataResponse.status}`);
+                            }
+                            
+                            const dataResult = await dataResponse.json();
+                            if (dataResult.status === 'error') {
+                                throw new Error(dataResult.message);
+                            }
+                            
+                            // Update table data
+                            customersTable.updateData(dataResult.data);
+                            customersTable.render();
+                            
+                            alert(`Successfully deleted ${result.deletedCount} row(s)`);
+                        } else {
+                            throw new Error(result.message || 'Delete failed');
+                        }
+                    } catch (error) {
+                        console.error('Error deleting rows:', error);
+                        alert('Failed to delete rows: ' + error.message);
+                    }
                 }
             });
             

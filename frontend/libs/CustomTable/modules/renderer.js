@@ -472,15 +472,31 @@ class Renderer {
         const deleteBtn = this.table.container.querySelector('.table-delete-btn');
 
         if (addBtn) {
-            addBtn.addEventListener('click', (e) => {
+            // Remove existing listener to prevent duplicates
+            const newAddBtn = addBtn.cloneNode(true);
+            addBtn.parentNode.replaceChild(newAddBtn, addBtn);
+            const newAddBtnRef = this.table.container.querySelector('.table-add-btn');
+            
+            newAddBtnRef.addEventListener('click', (e) => {
                 e.stopPropagation();
+                e.preventDefault();
                 this.handleAddClick();
             });
         }
 
         if (deleteBtn) {
-            deleteBtn.addEventListener('click', (e) => {
+            // Remove existing listener to prevent duplicates
+            const newDeleteBtn = deleteBtn.cloneNode(true);
+            deleteBtn.parentNode.replaceChild(newDeleteBtn, deleteBtn);
+            const newDeleteBtnRef = this.table.container.querySelector('.table-delete-btn');
+            
+            newDeleteBtnRef.addEventListener('click', (e) => {
                 e.stopPropagation();
+                e.preventDefault();
+                // Prevent click if disabled
+                if (newDeleteBtnRef.disabled) {
+                    return;
+                }
                 this.handleDeleteClick();
             });
             
