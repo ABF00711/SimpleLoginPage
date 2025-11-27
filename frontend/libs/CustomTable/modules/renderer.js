@@ -125,6 +125,13 @@ class Renderer {
     renderHeader(visibleColumns, columnWidthsMap) {
         let html = '<thead><tr>';
         
+        // Add checkbox column header (check all)
+        if (this.table.options.selectable) {
+            html += '<th class="table-header table-checkbox-header" style="width: 50px !important; min-width: 50px !important; max-width: 50px !important; text-align: center;">';
+            html += '<input type="checkbox" id="check-all-' + this.table.tableId + '" class="check-all-checkbox" title="Select all">';
+            html += '</th>';
+        }
+        
         visibleColumns.forEach((column, displayIndex) => {
             const originalIndex = column.originalIndex;
             const sortable = this.table.options.sortable && column.sortable !== false;
@@ -177,7 +184,8 @@ class Renderer {
         const dataToRender = this.table.options.searchable ? this.table.filteredData : this.table.options.data;
         
         if (dataToRender.length === 0) {
-            html += `<tr><td colspan="${visibleColumns.length}" class="table-empty">No data available</td></tr>`;
+            const colspan = visibleColumns.length + (this.table.options.selectable ? 1 : 0);
+            html += `<tr><td colspan="${colspan}" class="table-empty">No data available</td></tr>`;
         } else {
             dataToRender.forEach((row, rowIndex) => {
                 html += this.renderDataRow(row, rowIndex, visibleColumns, columnWidthsMap);
@@ -190,6 +198,11 @@ class Renderer {
 
     renderSearchRow(visibleColumns, columnWidthsMap) {
         let html = '<tr class="table-search-row">';
+        
+        // Add empty checkbox cell for search row
+        if (this.table.options.selectable) {
+            html += '<td class="table-search-cell table-checkbox-cell" style="width: 50px !important; min-width: 50px !important; max-width: 50px !important;"></td>';
+        }
         
         visibleColumns.forEach((column, displayIndex) => {
             const colKey = column.key;
@@ -239,7 +252,14 @@ class Renderer {
 
     renderDataRow(row, rowIndex, visibleColumns, columnWidthsMap) {
         const rowClass = this.getRowClass(rowIndex);
-        let html = `<tr class="${rowClass}">`;
+        let html = `<tr class="${rowClass}" data-row-index="${rowIndex}">`;
+        
+        // Add checkbox column
+        if (this.table.options.selectable) {
+            html += '<td class="table-cell table-checkbox-cell" style="width: 50px !important; min-width: 50px !important; max-width: 50px !important; text-align: center;">';
+            html += `<input type="checkbox" class="row-checkbox" data-row-index="${rowIndex}">`;
+            html += '</td>';
+        }
         
         visibleColumns.forEach(column => {
             const value = this.table.formatter.getCellValue(row, column);
@@ -281,6 +301,45 @@ class Renderer {
         }
         if (this.table.options.searchable) {
             this.table.filter.attachSearchListeners();
+        }
+        if (this.table.options.selectable) {
+            this.attachCheckboxListeners();
+        }
+    }
+
+    attachCheckboxListeners() {
+        // Handle "Check All" checkbox
+        const checkAllCheckbox = this.table.container.querySelector(`#check-all-${this.table.tableId}`);
+        if (checkAllCheckbox) {
+            checkAllCheckbox.addEventListener('change', (e) => {
+                const isChecked = checkAllCheckbox.checked;
+                console.log('Check all clicked, isChecked:', isChecked);
+                
+                // Update all row checkboxes
+                const rowCheckboxes = this.table.container.querySelectorAll('.row-checkbox');
+                rowCheckboxes.forEach(checkbox => {
+                    checkbox.checked = isChecked;
+                });
+            });
+        }
+
+        // Handle individual row checkboxes using event delegation
+        const tbody = this.table.container.querySelector('tbody');
+        if (tbody) {
+            tbody.addEventListener('change', (e) => {
+                if (e.target && e.target.classList.contains('row-checkbox')) {
+                    const rowIndex = parseInt(e.target.getAttribute('data-row-index'));
+                    const isChecked = e.target.checked;
+                    console.log('Row checkbox clicked, rowIndex:', rowIndex, 'isChecked:', isChecked);
+                    
+                    // Update check all state
+                    if (checkAllCheckbox) {
+                        const rowCheckboxes = this.table.container.querySelectorAll('.row-checkbox');
+                        const allChecked = rowCheckboxes.length > 0 && Array.from(rowCheckboxes).every(cb => cb.checked);
+                        checkAllCheckbox.checked = allChecked;
+                    }
+                }
+            });
         }
     }
 

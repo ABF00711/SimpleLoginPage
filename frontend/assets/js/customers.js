@@ -94,7 +94,8 @@
                 columnVisibility: true,
                 searchable: true,
                 striped: true,
-                hover: true
+                hover: true,
+                selectable: true
             });
             
             customersTable.render();

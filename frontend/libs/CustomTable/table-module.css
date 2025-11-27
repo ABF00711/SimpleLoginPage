@@ -425,6 +425,40 @@
     text-align: center; /* Center align cell values */
 }
 
+/* Checkbox Column Styles */
+.table-checkbox-header {
+    text-align: center !important;
+    user-select: none;
+    width: 50px !important;
+    min-width: 50px !important;
+    max-width: 50px !important;
+    padding: 0 !important;
+}
+
+.table-checkbox-cell {
+    text-align: center !important;
+    padding: 8px 4px !important;
+    vertical-align: middle !important;
+    width: 50px !important;
+    min-width: 50px !important;
+    max-width: 50px !important;
+}
+
+/* Standard HTML Checkbox Styles */
+.table-checkbox-header input[type="checkbox"],
+.table-checkbox-cell input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+    margin: 0;
+    vertical-align: middle;
+}
+
+.table-checkbox-header input[type="checkbox"]:hover,
+.table-checkbox-cell input[type="checkbox"]:hover {
+    cursor: pointer;
+}
+
 /* Search Row Styles */
 .table-search-row {
     background-color: #f8f9fa;
