@@ -266,8 +266,9 @@ class Renderer {
         
         // Add checkbox column
         if (this.table.options.selectable) {
+            const isSelected = this.table.selectedRows && this.table.selectedRows.has(rowIndex);
             html += '<td class="table-cell table-checkbox-cell" style="width: 50px !important; min-width: 50px !important; max-width: 50px !important; text-align: center;">';
-            html += `<input type="checkbox" class="row-checkbox" data-row-index="${rowIndex}">`;
+            html += `<input type="checkbox" class="row-checkbox" data-row-index="${rowIndex}" ${isSelected ? 'checked' : ''}>`;
             html += '</td>';
         }
         
@@ -318,21 +319,45 @@ class Renderer {
         
         // Attach Add and Delete button handlers
         this.attachActionButtons();
+        
+        // Update Delete button state after all listeners are attached
+        if (this.table.options.selectable) {
+            this.updateDeleteButtonState();
+        }
     }
 
     attachCheckboxListeners() {
+        // Initialize selectedRows Set if not exists
+        if (!this.table.selectedRows) {
+            this.table.selectedRows = new Set();
+        }
+        
         // Handle "Check All" checkbox
         const checkAllCheckbox = this.table.container.querySelector(`#check-all-${this.table.tableId}`);
         if (checkAllCheckbox) {
             checkAllCheckbox.addEventListener('change', (e) => {
                 const isChecked = checkAllCheckbox.checked;
-                console.log('Check all clicked, isChecked:', isChecked);
+                
+                // Get data to use (filtered or original)
+                const dataToUse = this.table.options.searchable ? this.table.filteredData : this.table.options.data;
+                
+                // Update selectedRows Set
+                if (isChecked) {
+                    dataToUse.forEach((row, index) => {
+                        this.table.selectedRows.add(index);
+                    });
+                } else {
+                    this.table.selectedRows.clear();
+                }
                 
                 // Update all row checkboxes
                 const rowCheckboxes = this.table.container.querySelectorAll('.row-checkbox');
                 rowCheckboxes.forEach(checkbox => {
                     checkbox.checked = isChecked;
                 });
+                
+                // Update Delete button state
+                this.updateDeleteButtonState();
             });
         }
 
@@ -343,7 +368,13 @@ class Renderer {
                 if (e.target && e.target.classList.contains('row-checkbox')) {
                     const rowIndex = parseInt(e.target.getAttribute('data-row-index'));
                     const isChecked = e.target.checked;
-                    console.log('Row checkbox clicked, rowIndex:', rowIndex, 'isChecked:', isChecked);
+                    
+                    // Update selectedRows Set
+                    if (isChecked) {
+                        this.table.selectedRows.add(rowIndex);
+                    } else {
+                        this.table.selectedRows.delete(rowIndex);
+                    }
                     
                     // Update check all state
                     if (checkAllCheckbox) {
@@ -351,6 +382,9 @@ class Renderer {
                         const allChecked = rowCheckboxes.length > 0 && Array.from(rowCheckboxes).every(cb => cb.checked);
                         checkAllCheckbox.checked = allChecked;
                     }
+                    
+                    // Update Delete button state
+                    this.updateDeleteButtonState();
                 }
             });
         }
@@ -449,7 +483,20 @@ class Renderer {
                 e.stopPropagation();
                 this.handleDeleteClick();
             });
+            
+            // Initialize Delete button state
+            this.updateDeleteButtonState();
         }
+    }
+
+    updateDeleteButtonState() {
+        const deleteBtn = this.table.container.querySelector('.table-delete-btn');
+        if (!deleteBtn) return;
+        
+        const selectedRows = Array.from(this.table.selectedRows || []);
+        const hasSelectedRows = selectedRows.length > 0;
+        
+        deleteBtn.disabled = !hasSelectedRows;
     }
 
     handleAddClick() {
@@ -467,23 +514,19 @@ class Renderer {
         const selectedRows = Array.from(this.table.selectedRows || []);
         
         if (selectedRows.length === 0) {
-            // Dispatch event even if no rows selected (parent can show message)
-            const event = new CustomEvent('tableDelete', {
-                detail: {
-                    table: this.table,
-                    selectedRows: [],
-                    selectedData: []
-                }
-            });
-            this.table.container.dispatchEvent(event);
-            return;
+            return; // Button should be disabled, but just in case
         }
 
         // Get selected data
         const dataToUse = this.table.options.searchable ? this.table.filteredData : this.table.options.data;
         const selectedData = selectedRows.map(index => dataToUse[index]);
 
-        // Dispatch custom event for Delete action
+        // Call onDelete callback if provided
+        if (this.table.options.onDelete && typeof this.table.options.onDelete === 'function') {
+            this.table.options.onDelete(selectedRows, selectedData);
+        }
+
+        // Dispatch custom event for Delete action (for backward compatibility)
         const event = new CustomEvent('tableDelete', {
             detail: {
                 table: this.table,

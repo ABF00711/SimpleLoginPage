@@ -95,7 +95,19 @@
                 searchable: true,
                 striped: true,
                 hover: true,
-                selectable: true
+                selectable: true,
+                onDelete: (selectedRows, selectedData) => {
+                    console.log('Delete callback called:', {
+                        selectedRows: selectedRows,
+                        selectedData: selectedData,
+                        count: selectedRows.length
+                    });
+                    // TODO: Implement delete logic here
+                    // Example:
+                    // if (confirm(`Are you sure you want to delete ${selectedRows.length} row(s)?`)) {
+                    //     // Call your delete API
+                    // }
+                }
             });
             
             customersTable.render();

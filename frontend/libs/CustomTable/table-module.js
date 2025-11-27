@@ -73,6 +73,9 @@ class TableModule {
         this.reorderer = new Reorderer(this);
         this.visibilityManager = new VisibilityManager(this);
         this.renderer = new Renderer(this);
+        
+        // Initialize selectedRows Set for row selection
+        this.selectedRows = new Set();
 
         // Initialize original order
         this.originalColumnOrder = this.options.columns.map((col, idx) => idx);
