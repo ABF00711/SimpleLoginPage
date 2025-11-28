@@ -75,97 +75,100 @@ class AddModal {
                     <form id="add-row-form" class="add-row-form">
         `;
 
-        // Generate form fields based on field configurations
+        // Generate form fields based on field configurations using Smart UI components
+        // Fields are already filtered to only include those with non-empty labels
         this.fields.forEach(field => {
-            const isRequired = field.mandatory ? 'required' : '';
-            const requiredMark = field.mandatory ? '<span class="required-mark">*</span>' : '';
-            const requiredClass = field.mandatory ? 'required-field' : '';
-            
             modalHTML += `
-                <div class="form-field">
-                    <label for="field-${field.field_name}" class="form-label ${requiredClass}">
-                        ${this.escapeHtml(field.field_label)} ${requiredMark}
-                    </label>
-                    <div class="form-input-wrapper">
+                <div class="smart-form-row">
+                    <label>${this.escapeHtml(field.field_label)}</label>
             `;
 
             switch (field.field_type) {
                 case 'text':
                     modalHTML += `
-                        <input type="text" 
-                               id="field-${field.field_name}" 
-                               name="${field.field_name}" 
-                               class="form-input ${requiredClass}" 
-                               ${isRequired}>
+                        <smart-input
+                            data-field="${field.field_name}"
+                            placeholder="Enter ${field.field_label.toLowerCase()}"
+                            class="underlined"
+                            form-control-name="${field.field_name}"
+                            required
+                        ></smart-input>
                     `;
                     break;
 
                 case 'number':
                     modalHTML += `
-                        <input type="number" 
-                               id="field-${field.field_name}" 
-                               name="${field.field_name}" 
-                               class="form-input ${requiredClass}" 
-                               ${isRequired}>
+                        <smart-input
+                            data-field="${field.field_name}"
+                            placeholder="Enter ${field.field_label.toLowerCase()}"
+                            class="underlined"
+                            form-control-name="${field.field_name}"
+                            type="number"
+                            required
+                        ></smart-input>
                     `;
                     break;
 
                 case 'date':
                     modalHTML += `
-                        <input type="date" 
-                               id="field-${field.field_name}" 
-                               name="${field.field_name}" 
-                               class="form-input ${requiredClass}" 
-                               ${isRequired}>
+                        <smart-date-input
+                            data-field="${field.field_name}"
+                            placeholder="Select ${field.field_label.toLowerCase()}"
+                            class="underlined"
+                            form-control-name="${field.field_name}"
+                            required
+                        ></smart-date-input>
                     `;
                     break;
 
                 case 'combobox':
                     modalHTML += `
-                        <div class="combobox-wrapper">
-                            <input type="text" 
-                                   id="field-${field.field_name}" 
-                                   name="${field.field_name}" 
-                                   class="form-input combobox-input ${requiredClass}" 
-                                   data-lookup-sql="${this.escapeHtml(field.lookup_sql || '')}"
-                                   autocomplete="off"
-                                   ${isRequired}>
-                            <div class="combobox-dropdown" id="dropdown-${field.field_name}"></div>
-                        </div>
+                        <smart-drop-down-list
+                            data-field="${field.field_name}"
+                            placeholder="Select ${field.field_label.toLowerCase()}"
+                            class="underlined"
+                            form-control-name="${field.field_name}"
+                            selection-mode="one"
+                            id="combobox-${field.field_name}"
+                            required
+                        ></smart-drop-down-list>
                     `;
                     break;
 
                 case 'file':
                     modalHTML += `
-                        <input type="file" 
-                               id="field-${field.field_name}" 
-                               name="${field.field_name}" 
-                               class="form-input ${requiredClass}" 
-                               ${isRequired}>
+                        <smart-file-upload
+                            data-field="${field.field_name}"
+                            class="underlined"
+                            form-control-name="${field.field_name}"
+                            id="file-${field.field_name}"
+                            required
+                        ></smart-file-upload>
                     `;
                     break;
 
                 default:
                     modalHTML += `
-                        <input type="text" 
-                               id="field-${field.field_name}" 
-                               name="${field.field_name}" 
-                               class="form-input ${requiredClass}" 
-                               ${isRequired}>
+                        <smart-input
+                            data-field="${field.field_name}"
+                            placeholder="Enter ${field.field_label.toLowerCase()}"
+                            class="underlined"
+                            form-control-name="${field.field_name}"
+                            required
+                        ></smart-input>
                     `;
             }
 
             modalHTML += `
-                    </div>
                 </div>`;
         });
 
         modalHTML += `
                     </form>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn-cancel" id="add-modal-cancel">Cancel</button>
-                    <button type="button" class="btn-submit" id="add-modal-submit">Add</button>
+                <div class="modal-footer" style="padding: 15px 20px; border-top: 1px solid #eee; display: flex; justify-content: flex-end; gap: 10px;">
+                    <smart-button id="add-modal-cancel">Cancel</smart-button>
+                    <smart-button id="add-modal-submit" class="primary">Add</smart-button>
                 </div>
             </smart-window>
         `;
@@ -177,60 +180,56 @@ class AddModal {
 
         this.modal = document.getElementById('add-row-modal');
         
-        // Attach event listeners
-        this.attachEventListeners();
-        
-        // Initialize combobox fields
-        this.initializeComboboxes();
+        // Wait for Smart UI to upgrade elements, then initialize
+        setTimeout(() => {
+            this.initializeComboboxes();
+            this.attachEventListeners();
+        }, 100);
     }
 
     async initializeComboboxes() {
-        const comboboxInputs = this.modal.querySelectorAll('.combobox-input');
+        // Find combobox fields (smart-drop-down-list)
+        const comboboxFields = this.fields.filter(f => f.field_type === 'combobox');
         
-        for (const input of comboboxInputs) {
-            const lookupSql = input.getAttribute('data-lookup-sql');
-            if (!lookupSql) continue;
+        for (const field of comboboxFields) {
+            const combobox = this.modal.querySelector(`#combobox-${field.field_name}`);
+            if (!combobox) continue;
 
-            // Load lookup data
-            await this.loadLookupData(lookupSql, input);
-            
-            // Attach autocomplete functionality
-            this.attachComboboxListeners(input);
+            // Load lookup data from job table
+            await this.loadComboboxData(field.field_name, combobox);
         }
     }
 
-    async loadLookupData(lookupSql, input) {
+    async loadComboboxData(fieldName, comboboxElement) {
         try {
-            // Check cache first
-            if (this.lookupData[lookupSql]) {
-                input.lookupValues = this.lookupData[lookupSql];
-                return;
-            }
+            // For job field, get data from job table
+            if (fieldName === 'job') {
+                const response = await fetch('./backend/table-data.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        action: 'getLookupData',
+                        tableName: 'job',
+                        columnName: 'name'
+                    })
+                });
 
-            // Fetch lookup data from backend
-            const response = await fetch('./backend/table-data.php', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    action: 'getLookupData',
-                    lookupSql: lookupSql
-                })
-            });
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
 
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-
-            const result = await response.json();
-            if (result.status === 'success') {
-                this.lookupData[lookupSql] = result.data;
-                input.lookupValues = result.data;
+                const result = await response.json();
+                if (result.status === 'success' && result.data) {
+                    // Set data source for smart-drop-down-list
+                    const dataSource = result.data.map(name => ({ label: name, value: name }));
+                    comboboxElement.dataSource = dataSource;
+                }
             }
         } catch (error) {
-            console.error('Error loading lookup data:', error);
-            input.lookupValues = [];
+            console.error('Error loading combobox data:', error);
+            comboboxElement.dataSource = [];
         }
     }
 
@@ -510,47 +509,83 @@ class AddModal {
     async handleSubmit() {
         const form = this.modal.querySelector('#add-row-form');
         
-        // Manual validation for required fields (without showing browser default messages)
-        let isValid = true;
+        // Validate required fields before submission
+        const inputs = form.querySelectorAll('[data-field]');
         const errors = [];
         
-        this.fields.forEach(field => {
-            if (field.mandatory) {
-                const input = form.querySelector(`#field-${field.field_name}`);
-                if (!input || !input.value || input.value.trim() === '') {
-                    isValid = false;
-                    errors.push(field.field_label);
-                    if (input) {
-                        input.classList.add('error');
-                    }
+        inputs.forEach(input => {
+            const key = input.getAttribute('data-field');
+            const isRequired = input.hasAttribute('required');
+            
+            if (isRequired) {
+                let value = '';
+                let isEmpty = false;
+                
+                // Handle different Smart UI component types
+                if (input.tagName === 'SMART-DROP-DOWN-LIST') {
+                    value = input.selectedValues && input.selectedValues.length > 0 
+                        ? input.selectedValues[0] 
+                        : (input.value || '');
+                    isEmpty = !value || String(value).trim() === '';
+                } else if (input.tagName === 'SMART-DATE-INPUT') {
+                    value = input.value || '';
+                    isEmpty = !value || String(value).trim() === '';
+                } else if (input.tagName === 'SMART-FILE-UPLOAD') {
+                    isEmpty = !input.files || input.files.length === 0;
                 } else {
-                    if (input) {
-                        input.classList.remove('error');
-                    }
+                    // smart-input and others
+                    value = input.value || '';
+                    isEmpty = !value || String(value).trim() === '';
+                }
+                
+                if (isEmpty) {
+                    // Find the field label for error message
+                    const field = this.fields.find(f => f.field_name === key);
+                    const fieldLabel = field ? field.field_label : key;
+                    errors.push(fieldLabel);
+                    
+                    // Add visual error indicator
+                    input.classList.add('error');
+                } else {
+                    input.classList.remove('error');
                 }
             }
         });
         
-        if (!isValid) {
+        // If there are validation errors, show them and prevent submission
+        if (errors.length > 0) {
             alert('Please fill in all required fields: ' + errors.join(', '));
             return;
         }
-
-        // Collect form data
-        const formData = new FormData(form);
+        
+        // Extract all fields that contain "data-field" attribute (like register page)
         const rowData = {};
         const fileFields = {};
 
-        // Process regular fields - convert empty strings to null
-        for (const [key, value] of formData.entries()) {
-            const field = this.fields.find(f => f.field_name === key);
-            if (field && field.field_type === 'file') {
-                fileFields[key] = formData.get(key);
+        // Build payload object from input fields
+        inputs.forEach(input => {
+            const key = input.getAttribute('data-field');
+            let value = '';
+            
+            // Handle different Smart UI component types
+            if (input.tagName === 'SMART-DROP-DOWN-LIST') {
+                value = input.selectedValues && input.selectedValues.length > 0 
+                    ? input.selectedValues[0] 
+                    : (input.value || '');
+            } else if (input.tagName === 'SMART-DATE-INPUT') {
+                value = input.value || '';
+            } else if (input.tagName === 'SMART-FILE-UPLOAD') {
+                // Handle file upload
+                fileFields[key] = input.files || null;
+                return;
             } else {
-                // Convert empty strings to null
-                rowData[key] = (value && value.trim() !== '') ? value : null;
+                // smart-input and others
+                value = input.value || '';
             }
-        }
+            
+            // Convert empty strings to null
+            rowData[key] = (value && String(value).trim() !== '') ? String(value).trim() : null;
+        });
 
         // Dispatch event with row data
         const event = new CustomEvent('tableAddSubmit', {

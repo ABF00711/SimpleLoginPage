@@ -387,30 +387,37 @@ function handleGetFieldConfig() {
         
         $tableView = $form['TableView'];
         
-        // Get field configurations
-        $fieldsSql = "SELECT field_name, field_label, field_type, mandatory, lookup_sql 
+        // Get field configurations - only field_name, field_label, field_type
+        // Hardcoded field names: fullname, displayname, birthday, age, job
+        $hardcodedFields = ['fullname', 'displayname', 'birthday', 'age', 'job'];
+        $placeholders = implode(',', array_fill(0, count($hardcodedFields), '?'));
+        
+        $fieldsSql = "SELECT field_name, field_label, field_type 
                       FROM data_config 
-                      WHERE table_name = ? 
-                      ORDER BY id";
+                      WHERE table_name = ? AND field_name IN ($placeholders)
+                      ORDER BY FIELD(field_name, $placeholders)";
         
         $stmt = $conn->prepare($fieldsSql);
         if (!$stmt) {
             throw new Exception('Failed to prepare fields query: ' . $conn->error);
         }
         
-        $stmt->bind_param("s", $tableView);
+        $params = array_merge([$tableView], $hardcodedFields, $hardcodedFields);
+        $types = str_repeat('s', count($params));
+        $stmt->bind_param($types, ...$params);
         $stmt->execute();
         $fieldsResult = $stmt->get_result();
         
         $fields = [];
         while ($row = $fieldsResult->fetch_assoc()) {
-            $fields[] = [
-                'field_name' => $row['field_name'],
-                'field_label' => $row['field_label'],
-                'field_type' => $row['field_type'],
-                'mandatory' => (int)$row['mandatory'] === 1,
-                'lookup_sql' => $row['lookup_sql'] && trim($row['lookup_sql']) !== 'NULL' ? $row['lookup_sql'] : null
-            ];
+            // Only include fields with non-empty labels
+            if (!empty($row['field_label']) && trim($row['field_label']) !== '') {
+                $fields[] = [
+                    'field_name' => $row['field_name'],
+                    'field_label' => $row['field_label'],
+                    'field_type' => $row['field_type']
+                ];
+            }
         }
         $stmt->close();
         
@@ -454,31 +461,47 @@ function handleGetLookupData($jsonBody = null) {
             $data = $jsonBody;
         }
         
+        // Support both old lookupSql and new tableName/columnName approach
         $lookupSql = $data['lookupSql'] ?? '';
+        $tableName = $data['tableName'] ?? '';
+        $columnName = $data['columnName'] ?? 'name';
         
-        if (empty($lookupSql)) {
+        if (!empty($lookupSql)) {
+            // Old approach: execute lookup SQL query
+            $result = $conn->query($lookupSql);
+            
+            if (!$result) {
+                throw new Exception('Failed to execute lookup query: ' . $conn->error);
+            }
+            
+            $lookupData = [];
+            while ($row = $result->fetch_assoc()) {
+                // Get first column value (assuming SELECT name FROM ...)
+                $values = array_values($row);
+                if (!empty($values)) {
+                    $lookupData[] = $values[0];
+                }
+            }
+        } else if (!empty($tableName)) {
+            // New approach: get data from table directly
+            $sql = "SELECT DISTINCT `$columnName` FROM `$tableName` WHERE `$columnName` IS NOT NULL AND `$columnName` != '' ORDER BY `$columnName`";
+            $result = $conn->query($sql);
+            
+            if (!$result) {
+                throw new Exception('Failed to execute lookup query: ' . $conn->error);
+            }
+            
+            $lookupData = [];
+            while ($row = $result->fetch_assoc()) {
+                $lookupData[] = $row[$columnName];
+            }
+        } else {
             http_response_code(400);
             echo json_encode([
                 'status' => 'error',
-                'message' => 'lookupSql parameter is required'
+                'message' => 'Either lookupSql or tableName parameter is required'
             ]);
             exit;
-        }
-        
-        // Execute lookup SQL query
-        $result = $conn->query($lookupSql);
-        
-        if (!$result) {
-            throw new Exception('Failed to execute lookup query: ' . $conn->error);
-        }
-        
-        $lookupData = [];
-        while ($row = $result->fetch_assoc()) {
-            // Get first column value (assuming SELECT name FROM ...)
-            $values = array_values($row);
-            if (!empty($values)) {
-                $lookupData[] = $values[0];
-            }
         }
         
         // Remove duplicates and sort
@@ -576,7 +599,7 @@ function handleAddTableData($jsonBody = null) {
         $tableView = $form['TableView'];
         
         // Get field configurations to determine which fields to insert
-        $fieldsSql = "SELECT field_name, field_type, lookup_sql 
+        $fieldsSql = "SELECT field_name, field_type 
                       FROM data_config 
                       WHERE table_name = ? 
                       ORDER BY id";
@@ -594,11 +617,11 @@ function handleAddTableData($jsonBody = null) {
         $comboboxFields = []; // Store combobox field configurations
         while ($row = $fieldsResult->fetch_assoc()) {
             $fieldNames[] = $row['field_name'];
-            // Store combobox fields with their lookup_sql
-            if ($row['field_type'] === 'combobox' && !empty($row['lookup_sql'])) {
+            // Store combobox fields - lookup table name is the same as field name
+            if ($row['field_type'] === 'combobox') {
                 $comboboxFields[$row['field_name']] = [
-                    'lookup_sql' => $row['lookup_sql'],
-                    'field_name' => $row['field_name']
+                    'field_name' => $row['field_name'],
+                    'lookup_table' => $row['field_name'] // e.g., 'job' field uses 'job' table
                 ];
             }
         }
@@ -630,10 +653,8 @@ function handleAddTableData($jsonBody = null) {
                 
                 // Handle combobox fields - need to get ID from lookup table
                 if (isset($comboboxFields[$fieldName]) && $value !== '' && $value !== null) {
-                    $lookupSql = $comboboxFields[$fieldName]['lookup_sql'];
-                    // Extract table name from lookup_sql (e.g., "SELECT name FROM job" -> "job")
-                    $lookupTableName = extractTableNameFromLookupSql($lookupSql);
-                    $lookupColumnName = extractColumnNameFromLookupSql($lookupSql);
+                    $lookupTableName = $comboboxFields[$fieldName]['lookup_table'];
+                    $lookupColumnName = 'name'; // Default column name for lookup tables
                     
                     if ($lookupTableName) {
                         // Check if value exists in lookup table
