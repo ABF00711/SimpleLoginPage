@@ -516,7 +516,12 @@ class Renderer {
     }
 
     handleAddClick() {
-        // Dispatch custom event for Add action
+        // Call onAdd callback if provided
+        if (this.table.options.onAdd && typeof this.table.options.onAdd === 'function') {
+            this.table.options.onAdd();
+        }
+
+        // Dispatch custom event for Add action (for backward compatibility)
         const event = new CustomEvent('tableAdd', {
             detail: {
                 table: this.table

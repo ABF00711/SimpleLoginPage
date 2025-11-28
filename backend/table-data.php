@@ -25,11 +25,20 @@ switch ($action) {
     case 'delete':
         handleDeleteTableData($jsonBody);
         break;
+    case 'getFields':
+        handleGetFieldConfig();
+        break;
+    case 'getLookupData':
+        handleGetLookupData($jsonBody);
+        break;
+    case 'add':
+        handleAddTableData($jsonBody);
+        break;
     default:
         http_response_code(400);
         echo json_encode([
             'status' => 'error',
-            'message' => 'Invalid action. Use "get" or "delete"'
+            'message' => 'Invalid action. Use "get", "delete", "add", "getFields", or "getLookupData"'
         ]);
         exit;
 }
@@ -332,6 +341,443 @@ function handleDeleteTableData($jsonBody = null) {
             'message' => $e->getMessage()
         ]);
     }
+}
+
+/**
+ * Handle GET request - fetch field configurations for form
+ */
+function handleGetFieldConfig() {
+    global $conn;
+    
+    // Get form name from request
+    $formName = $_GET['formName'] ?? '';
+
+    if (empty($formName)) {
+        http_response_code(400);
+        echo json_encode([
+            'status' => 'error',
+            'message' => 'FormName parameter is required'
+        ]);
+        exit;
+    }
+
+    try {
+        // Get table name from forms
+        $formSql = "SELECT TableView FROM forms WHERE FormName = ? LIMIT 1";
+        $stmt = $conn->prepare($formSql);
+        if (!$stmt) {
+            throw new Exception('Failed to prepare form query: ' . $conn->error);
+        }
+        
+        $stmt->bind_param("s", $formName);
+        $stmt->execute();
+        $formResult = $stmt->get_result();
+        
+        if ($formResult->num_rows === 0) {
+            http_response_code(404);
+            echo json_encode([
+                'status' => 'error',
+                'message' => 'Form not found: ' . $formName
+            ]);
+            exit;
+        }
+        
+        $form = $formResult->fetch_assoc();
+        $stmt->close();
+        
+        $tableView = $form['TableView'];
+        
+        // Get field configurations
+        $fieldsSql = "SELECT field_name, field_label, field_type, mandatory, lookup_sql 
+                      FROM data_config 
+                      WHERE table_name = ? 
+                      ORDER BY id";
+        
+        $stmt = $conn->prepare($fieldsSql);
+        if (!$stmt) {
+            throw new Exception('Failed to prepare fields query: ' . $conn->error);
+        }
+        
+        $stmt->bind_param("s", $tableView);
+        $stmt->execute();
+        $fieldsResult = $stmt->get_result();
+        
+        $fields = [];
+        while ($row = $fieldsResult->fetch_assoc()) {
+            $fields[] = [
+                'field_name' => $row['field_name'],
+                'field_label' => $row['field_label'],
+                'field_type' => $row['field_type'],
+                'mandatory' => (int)$row['mandatory'] === 1,
+                'lookup_sql' => $row['lookup_sql'] && trim($row['lookup_sql']) !== 'NULL' ? $row['lookup_sql'] : null
+            ];
+        }
+        $stmt->close();
+        
+        echo json_encode([
+            'status' => 'success',
+            'fields' => $fields,
+            'table_name' => $tableView
+        ]);
+        
+    } catch (Exception $e) {
+        http_response_code(500);
+        echo json_encode([
+            'status' => 'error',
+            'message' => $e->getMessage()
+        ]);
+    } catch (Error $e) {
+        http_response_code(500);
+        echo json_encode([
+            'status' => 'error',
+            'message' => $e->getMessage()
+        ]);
+    }
+}
+
+/**
+ * Handle POST request - fetch lookup data for combobox fields
+ */
+function handleGetLookupData($jsonBody = null) {
+    global $conn;
+    
+    try {
+        // Use provided JSON body or read from input stream
+        if ($jsonBody === null) {
+            $jsonInput = file_get_contents('php://input');
+            $data = json_decode($jsonInput, true);
+            
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                throw new Exception('Invalid JSON: ' . json_last_error_msg());
+            }
+        } else {
+            $data = $jsonBody;
+        }
+        
+        $lookupSql = $data['lookupSql'] ?? '';
+        
+        if (empty($lookupSql)) {
+            http_response_code(400);
+            echo json_encode([
+                'status' => 'error',
+                'message' => 'lookupSql parameter is required'
+            ]);
+            exit;
+        }
+        
+        // Execute lookup SQL query
+        $result = $conn->query($lookupSql);
+        
+        if (!$result) {
+            throw new Exception('Failed to execute lookup query: ' . $conn->error);
+        }
+        
+        $lookupData = [];
+        while ($row = $result->fetch_assoc()) {
+            // Get first column value (assuming SELECT name FROM ...)
+            $values = array_values($row);
+            if (!empty($values)) {
+                $lookupData[] = $values[0];
+            }
+        }
+        
+        // Remove duplicates and sort
+        $lookupData = array_unique($lookupData);
+        sort($lookupData);
+        
+        echo json_encode([
+            'status' => 'success',
+            'data' => array_values($lookupData)
+        ]);
+        
+    } catch (Exception $e) {
+        http_response_code(500);
+        echo json_encode([
+            'status' => 'error',
+            'message' => $e->getMessage()
+        ]);
+    } catch (Error $e) {
+        http_response_code(500);
+        echo json_encode([
+            'status' => 'error',
+            'message' => $e->getMessage()
+        ]);
+    }
+}
+
+/**
+ * Handle POST request - add new row to table
+ */
+function handleAddTableData($jsonBody = null) {
+    global $conn;
+    
+    try {
+        // Use provided JSON body or read from input stream
+        if ($jsonBody === null) {
+            $jsonInput = file_get_contents('php://input');
+            $data = json_decode($jsonInput, true);
+            
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                throw new Exception('Invalid JSON: ' . json_last_error_msg());
+            }
+        } else {
+            $data = $jsonBody;
+        }
+        
+        $formName = $data['formName'] ?? '';
+        $rowData = $data['rowData'] ?? [];
+        
+        if (empty($formName)) {
+            http_response_code(400);
+            echo json_encode([
+                'status' => 'error',
+                'message' => 'FormName is required'
+            ]);
+            exit;
+        }
+        
+        if (empty($rowData) || !is_array($rowData)) {
+            http_response_code(400);
+            echo json_encode([
+                'status' => 'error',
+                'message' => 'Row data is required and must be an array'
+            ]);
+            exit;
+        }
+        
+        // Get form and table information
+        $formSql = "SELECT FormName, TableView 
+                    FROM forms 
+                    WHERE FormName = ? 
+                    LIMIT 1";
+        
+        $stmt = $conn->prepare($formSql);
+        if (!$stmt) {
+            throw new Exception('Failed to prepare form query: ' . $conn->error);
+        }
+        
+        $stmt->bind_param("s", $formName);
+        $stmt->execute();
+        $formResult = $stmt->get_result();
+        
+        if ($formResult->num_rows === 0) {
+            http_response_code(404);
+            echo json_encode([
+                'status' => 'error',
+                'message' => 'Form not found: ' . $formName
+            ]);
+            $stmt->close();
+            exit;
+        }
+        
+        $form = $formResult->fetch_assoc();
+        $stmt->close();
+        
+        $tableView = $form['TableView'];
+        
+        // Get field configurations to determine which fields to insert
+        $fieldsSql = "SELECT field_name, field_type, lookup_sql 
+                      FROM data_config 
+                      WHERE table_name = ? 
+                      ORDER BY id";
+        
+        $stmt = $conn->prepare($fieldsSql);
+        if (!$stmt) {
+            throw new Exception('Failed to prepare fields query: ' . $conn->error);
+        }
+        
+        $stmt->bind_param("s", $tableView);
+        $stmt->execute();
+        $fieldsResult = $stmt->get_result();
+        
+        $fieldNames = [];
+        $comboboxFields = []; // Store combobox field configurations
+        while ($row = $fieldsResult->fetch_assoc()) {
+            $fieldNames[] = $row['field_name'];
+            // Store combobox fields with their lookup_sql
+            if ($row['field_type'] === 'combobox' && !empty($row['lookup_sql'])) {
+                $comboboxFields[$row['field_name']] = [
+                    'lookup_sql' => $row['lookup_sql'],
+                    'field_name' => $row['field_name']
+                ];
+            }
+        }
+        $stmt->close();
+        
+        // Build INSERT query
+        $columns = [];
+        $values = [];
+        $params = [];
+        $types = '';
+        
+        // Add 'active' field with default value of 1
+        $columns[] = "`active`";
+        $values[] = "?";
+        $params[] = 1;
+        $types .= "i"; // integer type for active
+        
+        foreach ($fieldNames as $fieldName) {
+            // Skip 'active' if it's in the field list (we're setting it to 1 by default)
+            if ($fieldName === 'active') {
+                continue;
+            }
+            
+            if (isset($rowData[$fieldName])) {
+                $columns[] = "`$fieldName`";
+                $values[] = "?";
+                // Convert empty strings to NULL
+                $value = $rowData[$fieldName];
+                
+                // Handle combobox fields - need to get ID from lookup table
+                if (isset($comboboxFields[$fieldName]) && $value !== '' && $value !== null) {
+                    $lookupSql = $comboboxFields[$fieldName]['lookup_sql'];
+                    // Extract table name from lookup_sql (e.g., "SELECT name FROM job" -> "job")
+                    $lookupTableName = extractTableNameFromLookupSql($lookupSql);
+                    $lookupColumnName = extractColumnNameFromLookupSql($lookupSql);
+                    
+                    if ($lookupTableName) {
+                        // Check if value exists in lookup table
+                        $checkSql = "SELECT id FROM `$lookupTableName` WHERE `$lookupColumnName` = ? LIMIT 1";
+                        $checkStmt = $conn->prepare($checkSql);
+                        if ($checkStmt) {
+                            $checkStmt->bind_param("s", $value);
+                            $checkStmt->execute();
+                            $checkResult = $checkStmt->get_result();
+                            
+                            if ($checkResult->num_rows > 0) {
+                                // Value exists, get the ID
+                                $existingRow = $checkResult->fetch_assoc();
+                                $value = $existingRow['id'];
+                            } else {
+                                // Value doesn't exist, insert it and get the new ID
+                                $insertLookupSql = "INSERT INTO `$lookupTableName` (`$lookupColumnName`) VALUES (?)";
+                                $insertStmt = $conn->prepare($insertLookupSql);
+                                if ($insertStmt) {
+                                    $insertStmt->bind_param("s", $value);
+                                    if ($insertStmt->execute()) {
+                                        $value = $conn->insert_id;
+                                    } else {
+                                        throw new Exception('Failed to insert new lookup value: ' . $insertStmt->error);
+                                    }
+                                    $insertStmt->close();
+                                } else {
+                                    throw new Exception('Failed to prepare lookup insert query: ' . $conn->error);
+                                }
+                            }
+                            $checkStmt->close();
+                        }
+                    }
+                }
+                
+                if ($value === '' || $value === null) {
+                    $params[] = null;
+                    $types .= "s"; // Use string type but pass NULL
+                } else {
+                    $params[] = $value;
+                    $types .= "s"; // Assume string type for all fields
+                }
+            }
+        }
+        
+        if (empty($columns)) {
+            http_response_code(400);
+            echo json_encode([
+                'status' => 'error',
+                'message' => 'No valid fields to insert'
+            ]);
+            exit;
+        }
+        
+        $columnsStr = implode(', ', $columns);
+        $valuesStr = implode(', ', $values);
+        $insertSql = "INSERT INTO `$tableView` ($columnsStr) VALUES ($valuesStr)";
+        
+        $stmt = $conn->prepare($insertSql);
+        if (!$stmt) {
+            throw new Exception('Failed to prepare insert query: ' . $conn->error);
+        }
+        
+        // Handle NULL values properly
+        // mysqli doesn't support NULL in bind_param directly, so we need to use a workaround
+        $refs = [];
+        foreach ($params as $key => $value) {
+            $refs[$key] = &$params[$key];
+        }
+        
+        // Use call_user_func_array for proper NULL handling
+        if (!call_user_func_array([$stmt, 'bind_param'], array_merge([$types], $refs))) {
+            throw new Exception('Failed to bind parameters: ' . $stmt->error);
+        }
+        
+        // Execute insert
+        if ($stmt->execute()) {
+            $insertedId = $conn->insert_id;
+            $stmt->close();
+            
+            echo json_encode([
+                'status' => 'success',
+                'message' => 'Row added successfully',
+                'insertedId' => $insertedId
+            ]);
+        } else {
+            throw new Exception('Failed to execute insert query: ' . $stmt->error);
+        }
+        
+    } catch (Exception $e) {
+        http_response_code(500);
+        echo json_encode([
+            'status' => 'error',
+            'message' => $e->getMessage()
+        ]);
+    } catch (Error $e) {
+        http_response_code(500);
+        echo json_encode([
+            'status' => 'error',
+            'message' => $e->getMessage()
+        ]);
+    }
+}
+
+/**
+ * Extract table name from lookup SQL query
+ * Examples:
+ *   "SELECT name FROM job" -> "job"
+ *   "SELECT id, name FROM job WHERE active = 1" -> "job"
+ */
+function extractTableNameFromLookupSql($lookupSql) {
+    // Remove comments and normalize whitespace
+    $sql = preg_replace('/--.*$/m', '', $lookupSql);
+    $sql = preg_replace('/\/\*.*?\*\//s', '', $sql);
+    $sql = preg_replace('/\s+/', ' ', trim($sql));
+    
+    // Match "FROM table_name" or "FROM `table_name`"
+    if (preg_match('/FROM\s+`?(\w+)`?/i', $sql, $matches)) {
+        return $matches[1];
+    }
+    
+    return null;
+}
+
+/**
+ * Extract column name from lookup SQL query
+ * Examples:
+ *   "SELECT name FROM job" -> "name"
+ *   "SELECT id, name FROM job" -> "name" (first column after SELECT)
+ */
+function extractColumnNameFromLookupSql($lookupSql) {
+    // Remove comments and normalize whitespace
+    $sql = preg_replace('/--.*$/m', '', $lookupSql);
+    $sql = preg_replace('/\/\*.*?\*\//s', '', $sql);
+    $sql = preg_replace('/\s+/', ' ', trim($sql));
+    
+    // Match "SELECT column_name" or "SELECT `column_name`"
+    // Get the last column in SELECT (usually the display column)
+    if (preg_match('/SELECT\s+(?:[^,]+,\s*)*`?(\w+)`?/i', $sql, $matches)) {
+        return $matches[1];
+    }
+    
+    // Default to 'name' if not found
+    return 'name';
 }
 
 // Close connection at the end

@@ -73,6 +73,18 @@ class TableModule {
         this.reorderer = new Reorderer(this);
         this.visibilityManager = new VisibilityManager(this);
         this.renderer = new Renderer(this);
+
+        // Initialize add modal (check if AddModal is available)
+        if (typeof AddModal !== 'undefined') {
+            this.addModal = new AddModal(this);
+            // Set form name if provided in options
+            if (options.formName && typeof this.addModal.setFormName === 'function') {
+                this.addModal.setFormName(options.formName);
+            }
+        } else {
+            console.warn('AddModal not available. Add functionality will not work.');
+            this.addModal = null;
+        }
         
         // Initialize selectedRows Set for row selection
         this.selectedRows = new Set();

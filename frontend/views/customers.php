@@ -17,6 +17,7 @@ $pageScripts = [
     'libs/CustomTable/modules/reorderer.js',
     'libs/CustomTable/modules/visibility-manager.js',
     'libs/CustomTable/modules/renderer.js',
+    'libs/CustomTable/modules/add-modal.js',
     'libs/CustomTable/table-module.js',
     'customers.js'
 ];

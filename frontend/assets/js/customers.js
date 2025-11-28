@@ -88,6 +88,8 @@
             
             // Initialize CustomTable
             const customersTable = new TableModuleClass('customers-table', {
+                // Set form name for add modal
+                formName: currentFormName,
                 data: result.data,
                 columns: result.columns,
                 storageKey: `table_customers_${currentFormName}`,
@@ -99,6 +101,14 @@
                 striped: true,
                 hover: true,
                 selectable: true,
+                onAdd: () => {
+                    // Show add modal
+                    if (customersTable.addModal) {
+                        customersTable.addModal.show();
+                    } else {
+                        console.error('Add modal is not available');
+                    }
+                },
                 onDelete: async (selectedRows, selectedData) => {
                     if (selectedRows.length === 0) {
                         return;
@@ -131,8 +141,6 @@
                         const result = await response.json();
                         
                         if (result.status === 'success') {
-                            console.log('Delete successful:', result);
-                            
                             // Clear selected rows
                             customersTable.selectedRows.clear();
                             
@@ -164,11 +172,56 @@
             
             customersTable.render();
             
-            console.log('Customers table initialized:', {
-                formName: result.form.formName,
-                tableView: result.form.tableView,
-                columns: result.columns.length,
-                rows: result.data.length
+            // Listen for add submit event
+            customersTable.container.addEventListener('tableAddSubmit', async (e) => {
+                const { rowData, fileFields, tableName } = e.detail;
+                
+                try {
+                    // Call add API
+                    const response = await fetch('./backend/table-data.php', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            action: 'add',
+                            formName: currentFormName,
+                            rowData: rowData,
+                            fileFields: fileFields
+                        })
+                    });
+                    
+                    if (!response.ok) {
+                        const errorText = await response.text();
+                        throw new Error(`HTTP error! status: ${response.status}, body: ${errorText}`);
+                    }
+                    
+                    const result = await response.json();
+                    
+                    if (result.status === 'success') {
+                        // Reload table data
+                        const dataResponse = await fetch(`./backend/table-data.php?formName=${encodeURIComponent(currentFormName)}`);
+                        if (!dataResponse.ok) {
+                            throw new Error(`HTTP error! status: ${dataResponse.status}`);
+                        }
+                        
+                        const dataResult = await dataResponse.json();
+                        if (dataResult.status === 'error') {
+                            throw new Error(dataResult.message);
+                        }
+                        
+                        // Update table data
+                        customersTable.updateData(dataResult.data);
+                        customersTable.render();
+                        
+                        alert('Successfully added new row');
+                    } else {
+                        throw new Error(result.message || 'Add failed');
+                    }
+                } catch (error) {
+                    console.error('Error adding row:', error);
+                    alert('Failed to add row: ' + error.message);
+                }
             });
         } catch (error) {
             console.error('Error initializing customers table:', error);

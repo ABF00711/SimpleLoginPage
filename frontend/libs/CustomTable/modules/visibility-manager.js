@@ -88,7 +88,7 @@ class VisibilityManager {
     attachHiddenColumnsMenu() {
         const showColumnsBtn = this.table.container.querySelector('.show-columns-btn');
         const dropdown = this.table.container.querySelector('.hidden-columns-dropdown');
-
+        
         if (showColumnsBtn && dropdown) {
             // Remove any existing listeners to prevent duplicates
             const newShowColumnsBtn = showColumnsBtn.cloneNode(true);
@@ -108,22 +108,22 @@ class VisibilityManager {
             newBtn.addEventListener('click', (e) => {
                 e.stopPropagation(); // Critical: prevent document click handler from firing
                 e.preventDefault();
-                toggleDropdown(e);
-            });
-
+                        toggleDropdown(e);
+                    });
+                    
             // Close dropdown when clicking outside (but not on button or dropdown)
             // Use a named function and check the new button reference
             const closeDropdownHandler = (e) => {
                 // Don't close if clicking on button or inside dropdown
                 if (newBtn.contains(e.target) || dropdown.contains(e.target)) {
-                    return;
-                }
+                        return;
+                    }
                 // Close if clicking outside
                 if (dropdown.classList.contains('show')) {
                     dropdown.classList.remove('show');
-                }
-            };
-            
+                    }
+                };
+
             // Remove any existing listener to prevent duplicates
             document.removeEventListener('click', closeDropdownHandler);
             document.addEventListener('click', closeDropdownHandler);
@@ -133,8 +133,8 @@ class VisibilityManager {
             // Remove existing handler if it exists to prevent duplicates
             if (this.menuClickHandler) {
                 this.table.container.removeEventListener('click', this.menuClickHandler);
-            }
-            
+                }
+
             // Create new handler and store reference
             this.menuClickHandler = (e) => {
                 // Check if click is on a column item
@@ -147,10 +147,10 @@ class VisibilityManager {
                     }
                     return; // Don't process further
                 }
-                
+
                 // Check if click is on reset button
                 const resetBtn = e.target.closest('.hidden-column-reset');
-                if (resetBtn) {
+            if (resetBtn) {
                     e.stopPropagation();
                     this.resetColumnVisibility();
                     dropdown.classList.remove('show');
