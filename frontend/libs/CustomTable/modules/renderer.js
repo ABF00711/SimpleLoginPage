@@ -142,6 +142,13 @@ class Renderer {
             html += '</th>';
         }
         
+        // Add Action column header
+        if (this.table.options.onEdit && typeof this.table.options.onEdit === 'function') {
+            html += '<th class="table-header table-action-header" style="width: 60px !important; min-width: 60px !important; max-width: 60px !important; text-align: center;">';
+            html += '<span>Action</span>';
+            html += '</th>';
+        }
+        
         visibleColumns.forEach((column, displayIndex) => {
             const originalIndex = column.originalIndex;
             const sortable = this.table.options.sortable && column.sortable !== false;
@@ -194,7 +201,9 @@ class Renderer {
         const dataToRender = this.table.options.searchable ? this.table.filteredData : this.table.options.data;
         
         if (dataToRender.length === 0) {
-            const colspan = visibleColumns.length + (this.table.options.selectable ? 1 : 0);
+            const colspan = visibleColumns.length + 
+                          (this.table.options.selectable ? 1 : 0) + 
+                          (this.table.options.onEdit && typeof this.table.options.onEdit === 'function' ? 1 : 0);
             html += `<tr><td colspan="${colspan}" class="table-empty">No data available</td></tr>`;
         } else {
             dataToRender.forEach((row, rowIndex) => {
@@ -212,6 +221,11 @@ class Renderer {
         // Add empty checkbox cell for search row
         if (this.table.options.selectable) {
             html += '<td class="table-search-cell table-checkbox-cell" style="width: 50px !important; min-width: 50px !important; max-width: 50px !important;"></td>';
+        }
+        
+        // Add empty Action cell for search row
+        if (this.table.options.onEdit && typeof this.table.options.onEdit === 'function') {
+            html += '<td class="table-search-cell table-action-cell" style="width: 60px !important; min-width: 60px !important; max-width: 60px !important;"></td>';
         }
         
         visibleColumns.forEach((column, displayIndex) => {
@@ -272,6 +286,15 @@ class Renderer {
             html += '</td>';
         }
         
+        // Add Action column with Edit button
+        if (this.table.options.onEdit && typeof this.table.options.onEdit === 'function') {
+            html += '<td class="table-cell table-action-cell" style="width: 60px !important; min-width: 60px !important; max-width: 60px !important; text-align: center;">';
+            html += `<button type="button" class="table-edit-btn" data-row-index="${rowIndex}" title="Edit row">`;
+            html += '<span class="table-btn-icon table-icon-edit"></span>';
+            html += '</button>';
+            html += '</td>';
+        }
+        
         visibleColumns.forEach(column => {
             const value = this.table.formatter.getCellValue(row, column);
             let widthStyle = '';
@@ -320,10 +343,67 @@ class Renderer {
         // Attach Add and Delete button handlers
         this.attachActionButtons();
         
+        // Attach Edit button handlers
+        if (this.table.options.onEdit && typeof this.table.options.onEdit === 'function') {
+            this.attachEditButtonListeners();
+        }
+        
         // Update Delete button state after all listeners are attached
         if (this.table.options.selectable) {
             this.updateDeleteButtonState();
         }
+    }
+    
+    attachEditButtonListeners() {
+        // Remove existing listener if it exists
+        if (this._editButtonHandler) {
+            this.table.container.removeEventListener('click', this._editButtonHandler);
+        }
+        
+        // Create a named handler function for event delegation
+        this._editButtonHandler = (e) => {
+            const editBtn = e.target.closest('.table-edit-btn');
+            if (editBtn) {
+                e.stopPropagation();
+                e.preventDefault();
+                this.handleEditClick(editBtn);
+            }
+        };
+        
+        // Use event delegation on the table container for Edit buttons
+        this.table.container.addEventListener('click', this._editButtonHandler);
+    }
+    
+    handleEditClick(editBtn) {
+        const rowIndex = parseInt(editBtn.getAttribute('data-row-index'));
+        if (isNaN(rowIndex)) {
+            console.error('Invalid row index for edit button');
+            return;
+        }
+        
+        // Get the actual row data
+        const dataToUse = this.table.options.searchable ? this.table.filteredData : this.table.options.data;
+        const rowData = dataToUse[rowIndex];
+        
+        if (!rowData) {
+            console.error('Row data not found for index:', rowIndex);
+            return;
+        }
+        
+        // Call onEdit callback if provided
+        if (this.table.options.onEdit && typeof this.table.options.onEdit === 'function') {
+            this.table.options.onEdit(rowIndex, rowData);
+        }
+        
+        // Dispatch custom event for Edit action
+        const event = new CustomEvent('tableEdit', {
+            detail: {
+                table: this.table,
+                rowIndex: rowIndex,
+                rowData: rowData
+            }
+        });
+        this.table.container.dispatchEvent(event);
     }
 
     attachCheckboxListeners() {

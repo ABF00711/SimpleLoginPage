@@ -313,6 +313,10 @@
     content: var(--smart-icon-visibility);
 }
 
+.table-icon-edit::before {
+    content: var(--smart-icon-edit);
+}
+
 .show-columns-text {
     font-size: 0.875rem;
     color: #ffffff !important;
@@ -367,6 +371,42 @@
     background-color: #6c757d !important;
     cursor: not-allowed;
     opacity: 0.6;
+}
+
+/* Edit button styling (in Action column) */
+.table-edit-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: none !important;
+    border-radius: 4px;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+    color: #ffffff !important;
+    background-color: #007bff !important;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    width: 32px;
+    height: 32px;
+}
+
+.table-edit-btn:hover {
+    background-color: #0056b3 !important;
+}
+
+.table-edit-btn:active,
+.table-edit-btn:focus {
+    background-color: #004085 !important;
+    outline: none;
+}
+
+.table-edit-btn .table-btn-icon {
+    font-size: 1rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
 }
 
 .table-btn-icon {

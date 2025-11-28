@@ -101,6 +101,12 @@
                 striped: true,
                 hover: true,
                 selectable: true,
+                onEdit: (rowIndex, rowData) => {
+                    // Handle edit action
+                    console.log('Edit row:', rowIndex, rowData);
+                    // TODO: Implement edit functionality (e.g., open edit modal)
+                    alert('Edit functionality: Row ' + rowIndex + '\nData: ' + JSON.stringify(rowData, null, 2));
+                },
                 onAdd: () => {
                     // Show add modal
                     if (customersTable.addModal) {
