@@ -14,17 +14,17 @@ class TableModule {
         // Initialize state manager
         const storageKey = options.storageKey || `table_${containerId}`;
         this.stateManager = new StateManager(storageKey);
-
-        // Load saved layout state from localStorage (before normalizing columns)
-        const savedLayoutState = this.stateManager.loadLayoutState();
-        this.columnWidths = savedLayoutState.widths;
-        this.columnOrder = savedLayoutState.order;
-        this.columnVisibility = savedLayoutState.visibility;
         
-        // Load saved search pattern state from localStorage
-        const savedSearchPatternState = this.stateManager.loadSearchPatternState();
-
-        // Initialize column manager
+        // Set table name for database operations (extract from formName or use containerId)
+        const tableName = options.tableName || options.formName || containerId.replace('-table', '').replace('table-', '');
+        this.stateManager.setTableName(tableName);
+        
+        // Initialize with empty state first (will be loaded from database)
+        this.columnWidths = {};
+        this.columnOrder = [];
+        this.columnVisibility = {};
+        
+        // Initialize column manager with empty visibility (will be updated after loading)
         this.columnManager = new ColumnManager(this.columnVisibility);
 
         // Now normalize columns (can safely access this.columnVisibility)
@@ -55,9 +55,9 @@ class TableModule {
         this.originalData = [...(options.data || [])];
         this.filteredData = [...this.originalData];
         
-        // Initialize search state (load from saved state if available)
-        this.searchValues = savedSearchPatternState.searchValues || {};
-        this.filterOperations = savedSearchPatternState.filterOperations || {}; // Store selected filter operation per column
+        // Initialize search state (will be loaded from database)
+        this.searchValues = {};
+        this.filterOperations = {}; // Store selected filter operation per column
 
         // Initialize formatter
         this.formatter = Formatter;
@@ -66,13 +66,16 @@ class TableModule {
         this.sorter = new Sorter(this);
         this.filter = new Filter(this);
         
-        // Initialize sort state (load from saved state if available) - must be after sorter initialization
-        this.sorter.sortColumn = savedSearchPatternState.sortColumn || null;
-        this.sorter.sortDirection = savedSearchPatternState.sortDirection || 'asc';
+        // Initialize sort state (will be loaded from database)
+        this.sorter.sortColumn = null;
+        this.sorter.sortDirection = 'asc';
         this.resizer = new Resizer(this);
         this.reorderer = new Reorderer(this);
         this.visibilityManager = new VisibilityManager(this);
         this.renderer = new Renderer(this);
+        
+        // Set table instance reference for auto-save (after all modules are initialized)
+        this.stateManager.setTableInstance(this);
 
         // Initialize add modal (check if AddModal is available)
         if (typeof AddModal !== 'undefined') {
@@ -92,7 +95,59 @@ class TableModule {
         // Initialize original order
         this.originalColumnOrder = this.options.columns.map((col, idx) => idx);
 
-        this.init();
+        // Load grid_state from database asynchronously, then initialize
+        this.loadGridState().then(() => {
+            this.init();
+        }).catch((error) => {
+            console.error('Failed to load grid_state:', error);
+            // Initialize anyway with default state
+            this.init();
+        });
+    }
+
+    async loadGridState() {
+        // Load saved layout state from database
+        const savedLayoutState = await this.stateManager.loadLayoutState();
+        this.columnWidths = savedLayoutState.widths || {};
+        this.columnOrder = savedLayoutState.order || [];
+        
+        // Ensure visibility is an object, not an array
+        const loadedVisibility = savedLayoutState.visibility || {};
+        if (Array.isArray(loadedVisibility)) {
+            this.columnVisibility = {};
+        } else if (typeof loadedVisibility === 'object') {
+            this.columnVisibility = loadedVisibility;
+        } else {
+            this.columnVisibility = {};
+        }
+        
+        // Update column manager with loaded visibility
+        this.columnManager = new ColumnManager(this.columnVisibility);
+        
+        // Re-normalize columns with loaded visibility
+        this.options.columns = this.columnManager.normalizeColumns(
+            this.options.columns,
+            Formatter.getDefaultFormatter.bind(Formatter)
+        );
+        
+        // Ensure all columns have visibility set correctly based on loaded state
+        this.options.columns.forEach(column => {
+            const colKey = column.key;
+            if (this.columnVisibility.hasOwnProperty(colKey)) {
+                column.visible = this.columnVisibility[colKey] !== false;
+            }
+        });
+        
+        // Load saved search pattern state from database
+        const savedSearchPatternState = await this.stateManager.loadSearchPatternState();
+        
+        // Initialize search state (load from saved state if available)
+        this.searchValues = savedSearchPatternState.searchValues || {};
+        this.filterOperations = savedSearchPatternState.filterOperations || {};
+        
+        // Initialize sort state (load from saved state if available) - must be after sorter initialization
+        this.sorter.sortColumn = savedSearchPatternState.sortColumn || null;
+        this.sorter.sortDirection = savedSearchPatternState.sortDirection || 'asc';
     }
 
     init() {
@@ -119,6 +174,35 @@ class TableModule {
 
     render() {
         this.renderer.render();
+    }
+
+    /**
+     * Auto-save current grid_state to database
+     * Called by modules when state changes (width, order, visibility, sort, filter)
+     */
+    autoSaveGridState() {
+        // Ensure searchValues and filterOperations are objects (not arrays)
+        const searchValues = (this.searchValues && typeof this.searchValues === 'object' && !Array.isArray(this.searchValues)) 
+            ? this.searchValues 
+            : {};
+        const filterOperations = (this.filterOperations && typeof this.filterOperations === 'object' && !Array.isArray(this.filterOperations)) 
+            ? this.filterOperations 
+            : {};
+        
+        // Ensure columnVisibility is an object (not an array)
+        const columnVisibility = (this.columnVisibility && typeof this.columnVisibility === 'object' && !Array.isArray(this.columnVisibility)) 
+            ? this.columnVisibility 
+            : {};
+        
+        this.stateManager.autoSaveGridState(
+            this.columnWidths,
+            this.columnOrder,
+            columnVisibility,
+            this.sorter.sortColumn,
+            this.sorter.sortDirection,
+            searchValues,
+            filterOperations
+        );
     }
 
     // Public API methods

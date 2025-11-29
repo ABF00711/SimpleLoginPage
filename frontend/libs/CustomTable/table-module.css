@@ -319,6 +319,14 @@
     content: var(--smart-icon-edit);
 }
 
+.table-icon-search::before {
+    content: var(--smart-icon-search);
+}
+
+.table-icon-layout::before {
+    content: var(--smart-icon-column);
+}
+
 .show-columns-text {
     font-size: 0.875rem;
     color: #ffffff !important;

@@ -44,6 +44,12 @@ switch ($action) {
     case 'update':
         handleUpdateTableData($jsonBody);
         break;
+    case 'getGridState':
+        handleGetGridState($jsonBody);
+        break;
+    case 'saveGridState':
+        handleSaveGridState($jsonBody);
+        break;
     case 'getPatterns':
         handleGetPatterns($jsonBody);
         break;
@@ -60,7 +66,7 @@ switch ($action) {
         http_response_code(400);
         echo json_encode([
             'status' => 'error',
-            'message' => 'Invalid action. Use "get", "delete", "add", "update", "getFields", "getLookupData", "getPatterns", "getPattern", "savePattern", or "deletePattern"'
+            'message' => 'Invalid action. Use "get", "delete", "add", "update", "getFields", "getLookupData", "getGridState", "saveGridState", "getPatterns", "getPattern", "savePattern", or "deletePattern"'
         ]);
         exit;
 }
@@ -1046,6 +1052,174 @@ function extractColumnNameFromLookupSql($lookupSql) {
     
     // Default to 'name' if not found
     return 'name';
+}
+
+/**
+ * Handle GET request for grid_state (auto-load)
+ */
+function handleGetGridState($jsonBody = null) {
+    global $conn;
+    
+    try {
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+        $userId = $_SESSION['user_id'] ?? null;
+        
+        if (!$userId) {
+            throw new Exception('User not authenticated');
+        }
+        
+        if ($jsonBody === null) {
+            // Try GET parameters first, then POST body
+            $tableName = $_GET['tableName'] ?? $_POST['tableName'] ?? null;
+            if (!$tableName) {
+                $jsonInput = file_get_contents('php://input');
+                $data = json_decode($jsonInput, true);
+                $tableName = $data['tableName'] ?? null;
+            }
+        } else {
+            $tableName = $jsonBody['tableName'] ?? null;
+        }
+        
+        if (!$tableName) {
+            throw new Exception('tableName is required');
+        }
+        
+        // Get the current grid_state for this user and table
+        $sql = "SELECT state FROM grid_state WHERE userId = ? AND formname = ? LIMIT 1";
+        $stmt = $conn->prepare($sql);
+        if (!$stmt) {
+            throw new Exception('Failed to prepare query: ' . $conn->error);
+        }
+        
+        $stmt->bind_param("is", $userId, $tableName);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        
+        if ($result->num_rows === 0) {
+            $stmt->close();
+            // Return empty state if not found
+            echo json_encode([
+                'status' => 'success',
+                'data' => null
+            ]);
+            return;
+        }
+        
+        $row = $result->fetch_assoc();
+        $stmt->close();
+        
+        // Parse the JSON data
+        $gridState = json_decode($row['state'], true);
+        
+        echo json_encode([
+            'status' => 'success',
+            'data' => $gridState
+        ]);
+        
+    } catch (Exception $e) {
+        http_response_code(500);
+        echo json_encode([
+            'status' => 'error',
+            'message' => $e->getMessage()
+        ]);
+    } catch (Error $e) {
+        http_response_code(500);
+        echo json_encode([
+            'status' => 'error',
+            'message' => $e->getMessage()
+        ]);
+    }
+}
+
+/**
+ * Handle SAVE request for grid_state (auto-save with debouncing)
+ */
+function handleSaveGridState($jsonBody = null) {
+    global $conn;
+    
+    try {
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+        $userId = $_SESSION['user_id'] ?? null;
+        
+        if (!$userId) {
+            throw new Exception('User not authenticated');
+        }
+        
+        if ($jsonBody === null) {
+            $jsonInput = file_get_contents('php://input');
+            $data = json_decode($jsonInput, true);
+        } else {
+            $data = $jsonBody;
+        }
+        
+        $tableName = $data['tableName'] ?? '';
+        $gridStateData = $data['data'] ?? null;
+        
+        if (!$tableName || $gridStateData === null) {
+            throw new Exception('tableName and data are required');
+        }
+        
+        // Convert data to JSON string
+        $jsonData = json_encode($gridStateData);
+        
+        // Check if grid_state exists for this user and table
+        $checkSql = "SELECT id FROM grid_state WHERE userId = ? AND formname = ? LIMIT 1";
+        $checkStmt = $conn->prepare($checkSql);
+        if (!$checkStmt) {
+            throw new Exception('Failed to prepare check query: ' . $conn->error);
+        }
+        $checkStmt->bind_param("is", $userId, $tableName);
+        $checkStmt->execute();
+        $checkResult = $checkStmt->get_result();
+        $exists = $checkResult->num_rows > 0;
+        $checkStmt->close();
+        
+        if ($exists) {
+            // Update existing grid_state
+            $sql = "UPDATE grid_state SET state = ? WHERE userId = ? AND formname = ?";
+            $stmt = $conn->prepare($sql);
+            if (!$stmt) {
+                throw new Exception('Failed to prepare update query: ' . $conn->error);
+            }
+            $stmt->bind_param("sis", $jsonData, $userId, $tableName);
+        } else {
+            // Insert new grid_state
+            $sql = "INSERT INTO grid_state (formname, userId, state) VALUES (?, ?, ?)";
+            $stmt = $conn->prepare($sql);
+            if (!$stmt) {
+                throw new Exception('Failed to prepare insert query: ' . $conn->error);
+            }
+            $stmt->bind_param("sis", $tableName, $userId, $jsonData);
+        }
+        
+        if ($stmt->execute()) {
+            $stmt->close();
+            
+            echo json_encode([
+                'status' => 'success',
+                'message' => 'Grid state saved successfully'
+            ]);
+        } else {
+            throw new Exception('Failed to execute query: ' . $stmt->error);
+        }
+        
+    } catch (Exception $e) {
+        http_response_code(500);
+        echo json_encode([
+            'status' => 'error',
+            'message' => $e->getMessage()
+        ]);
+    } catch (Error $e) {
+        http_response_code(500);
+        echo json_encode([
+            'status' => 'error',
+            'message' => $e->getMessage()
+        ]);
+    }
 }
 
 /**

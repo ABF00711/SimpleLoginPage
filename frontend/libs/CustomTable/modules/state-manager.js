@@ -1,137 +1,263 @@
 /**
  * State Manager Module
- * Handles localStorage persistence for table state
+ * Handles auto-save/auto-load of grid_state to/from database
  * Saves both "layout" (column state) and "searchpattern" (sort/filter state) in one JSON
+ * Uses debouncing (2-3 seconds) to avoid too many API requests
  */
 
 class StateManager {
-    constructor(storageKey) {
+    constructor(storageKey, tableName = null) {
         this.storageKey = storageKey;
+        this.tableName = tableName;
+        this.tableInstance = null; // Reference to table instance
+        this.saveTimeout = null;
+        this.pendingState = null;
+        this.saveDelay = 2500; // 2.5 seconds debounce
     }
 
     /**
-     * Save layout state (column widths, order, visibility)
+     * Set table name for database operations
      */
-    saveLayoutState(columnWidths, columnOrder, columnVisibility) {
-        try {
-            // Load existing state or create new
-            let fullState = this.loadFullState();
-            
-            // Update layout state
-            fullState.layout = {
-                widths: columnWidths,
-                order: columnOrder,
-                visibility: columnVisibility
-            };
-            
-            localStorage.setItem(this.storageKey, JSON.stringify(fullState));
-        } catch (e) {
-            console.warn('Failed to save layout state:', e);
+    setTableName(tableName) {
+        this.tableName = tableName;
+    }
+
+    /**
+     * Set table instance reference for auto-save
+     */
+    setTableInstance(tableInstance) {
+        this.tableInstance = tableInstance;
+    }
+
+    /**
+     * Auto-save grid_state to database with debouncing
+     */
+    autoSaveGridState(columnWidths, columnOrder, columnVisibility, sortColumn, sortDirection, searchValues, filterOperations) {
+        if (!this.tableName) {
+            console.warn('Table name not set. Cannot auto-save grid_state.');
+            return;
         }
-    }
 
-    /**
-     * Save search pattern state (sort and filter)
-     */
-    saveSearchPatternState(sortColumn, sortDirection, searchValues, filterOperations) {
-        try {
-            // Load existing state or create new
-            let fullState = this.loadFullState();
-            
-            // Update search pattern state
-            fullState.searchpattern = {
+        // Ensure searchValues and filterOperations are objects, not arrays
+        const safeSearchValues = (searchValues && typeof searchValues === 'object' && !Array.isArray(searchValues)) 
+            ? searchValues 
+            : {};
+        const safeFilterOperations = (filterOperations && typeof filterOperations === 'object' && !Array.isArray(filterOperations)) 
+            ? filterOperations 
+            : {};
+        
+        // Ensure visibility is an object, not an array
+        const safeVisibility = (columnVisibility && typeof columnVisibility === 'object' && !Array.isArray(columnVisibility)) 
+            ? columnVisibility 
+            : {};
+        
+        // Store pending state
+        this.pendingState = {
+            layout: {
+                widths: columnWidths || {},
+                order: Array.isArray(columnOrder) ? columnOrder : [],
+                visibility: safeVisibility
+            },
+            searchpattern: {
                 sortColumn: sortColumn,
-                sortDirection: sortDirection,
-                searchValues: searchValues,
-                filterOperations: filterOperations
-            };
-            
-            localStorage.setItem(this.storageKey, JSON.stringify(fullState));
-        } catch (e) {
-            console.warn('Failed to save search pattern state:', e);
+                sortDirection: sortDirection || 'asc',
+                searchValues: safeSearchValues,
+                filterOperations: safeFilterOperations
+            }
+        };
+
+        // Clear existing timeout
+        if (this.saveTimeout) {
+            clearTimeout(this.saveTimeout);
+        }
+
+        // Set new timeout for debounced save
+        this.saveTimeout = setTimeout(() => {
+            this.saveGridStateToDatabase();
+        }, this.saveDelay);
+    }
+
+    /**
+     * Actually save grid_state to database
+     */
+    async saveGridStateToDatabase() {
+        if (!this.pendingState || !this.tableName) {
+            return;
+        }
+
+        try {
+            const response = await fetch('./backend/table-data.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'saveGridState',
+                    tableName: this.tableName,
+                    data: this.pendingState
+                })
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`HTTP error! status: ${response.status}, body: ${errorText}`);
+            }
+
+            const result = await response.json();
+            if (result.status !== 'success') {
+                throw new Error(result.message || 'Failed to save grid_state');
+            }
+
+            // Clear pending state after successful save
+            this.pendingState = null;
+        } catch (error) {
+            console.error('Failed to auto-save grid_state:', error);
         }
     }
 
     /**
-     * Save both layout and search pattern state at once
+     * Auto-load grid_state from database
      */
-    saveState(columnWidths, columnOrder, columnVisibility, sortColumn, sortDirection, searchValues, filterOperations) {
-        try {
-            const fullState = {
+    async loadGridStateFromDatabase() {
+        if (!this.tableName) {
+            console.warn('Table name not set. Cannot load grid_state.');
+            return {
                 layout: {
-                    widths: columnWidths,
-                    order: columnOrder,
-                    visibility: columnVisibility
+                    widths: {},
+                    order: [],
+                    visibility: {}
                 },
                 searchpattern: {
-                    sortColumn: sortColumn,
-                    sortDirection: sortDirection,
-                    searchValues: searchValues,
-                    filterOperations: filterOperations
+                    sortColumn: null,
+                    sortDirection: 'asc',
+                    searchValues: {},
+                    filterOperations: {}
                 }
             };
+        }
+
+        try {
+            const response = await fetch(`./backend/table-data.php?action=getGridState&tableName=${encodeURIComponent(this.tableName)}`);
             
-            localStorage.setItem(this.storageKey, JSON.stringify(fullState));
-        } catch (e) {
-            console.warn('Failed to save table state:', e);
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`HTTP error! status: ${response.status}, body: ${errorText}`);
+            }
+
+            const result = await response.json();
+            if (result.status === 'error') {
+                throw new Error(result.message || 'Failed to load grid_state');
+            }
+
+            // Return loaded state or empty state if not found
+            if (result.data) {
+                return result.data;
+            }
+
+            // Return empty state if not found
+            return {
+                layout: {
+                    widths: {},
+                    order: [],
+                    visibility: {}
+                },
+                searchpattern: {
+                    sortColumn: null,
+                    sortDirection: 'asc',
+                    searchValues: {},
+                    filterOperations: {}
+                }
+            };
+        } catch (error) {
+            console.error('Failed to load grid_state:', error);
+            // Return empty state on error
+            return {
+                layout: {
+                    widths: {},
+                    order: [],
+                    visibility: {}
+                },
+                searchpattern: {
+                    sortColumn: null,
+                    sortDirection: 'asc',
+                    searchValues: {},
+                    filterOperations: {}
+                }
+            };
         }
     }
 
     /**
-     * Load full state (both layout and searchpattern)
+     * Save layout state (triggers auto-save via table instance)
+     * This method is called by modules, but we need full state to save
+     * So we'll trigger the table's autoSaveGridState method instead
      */
-    loadFullState() {
-        try {
-            const saved = localStorage.getItem(this.storageKey);
-            if (saved) {
-                return JSON.parse(saved);
-            }
-        } catch (e) {
-            console.warn('Failed to load full state:', e);
+    saveLayoutState(columnWidths, columnOrder, columnVisibility) {
+        // This method is kept for compatibility but should not be called directly
+        // Modules should call table.autoSaveGridState() instead
+        if (this.tableInstance) {
+            this.tableInstance.autoSaveGridState();
         }
-        
-        return {
-            layout: {},
-            searchpattern: {}
-        };
+    }
+
+    /**
+     * Save search pattern state (triggers auto-save via table instance)
+     * This method is called by modules, but we need full state to save
+     * So we'll trigger the table's autoSaveGridState method instead
+     */
+    saveSearchPatternState(sortColumn, sortDirection, searchValues, filterOperations) {
+        // This method is kept for compatibility but should not be called directly
+        // Modules should call table.autoSaveGridState() instead
+        if (this.tableInstance) {
+            this.tableInstance.autoSaveGridState();
+        }
+    }
+
+    /**
+     * Save both layout and search pattern state at once (triggers auto-save)
+     */
+    saveState(columnWidths, columnOrder, columnVisibility, sortColumn, sortDirection, searchValues, filterOperations) {
+        this.autoSaveGridState(columnWidths, columnOrder, columnVisibility, sortColumn, sortDirection, searchValues, filterOperations);
     }
 
     /**
      * Load layout state (column widths, order, visibility)
+     * Now loads from database via loadGridStateFromDatabase
      */
-    loadLayoutState() {
+    async loadLayoutState() {
+        const gridState = await this.loadGridStateFromDatabase();
+        const layout = gridState.layout || {};
+        
         const result = {
             widths: {},
             order: [],
             visibility: {}
         };
-
-        try {
-            const fullState = this.loadFullState();
-            const layout = fullState.layout || {};
-            
-            // Load widths with validation
-            if (layout.widths) {
-                for (const key in layout.widths) {
-                    const width = Number(layout.widths[key]);
-                    // Validate width (50px to 5000px)
-                    if (!isNaN(width) && width >= 50 && width <= 5000) {
-                        result.widths[key] = width;
-                    }
+        
+        // Load widths with validation
+        if (layout.widths) {
+            for (const key in layout.widths) {
+                const width = Number(layout.widths[key]);
+                // Validate width (50px to 5000px)
+                if (!isNaN(width) && width >= 50 && width <= 5000) {
+                    result.widths[key] = width;
                 }
             }
-            
-            // Load order
-            if (Array.isArray(layout.order)) {
-                result.order = layout.order;
-            }
-            
-            // Load visibility
-            if (layout.visibility) {
+        }
+        
+        // Load order
+        if (Array.isArray(layout.order)) {
+            result.order = layout.order;
+        }
+        
+        // Load visibility - ensure it's an object, not an array
+        if (layout.visibility) {
+            // If it's an array (from old data), convert to empty object
+            if (Array.isArray(layout.visibility)) {
+                result.visibility = {};
+            } else if (typeof layout.visibility === 'object') {
                 result.visibility = layout.visibility;
+            } else {
+                result.visibility = {};
             }
-        } catch (e) {
-            console.warn('Failed to load layout state:', e);
         }
 
         return result;
@@ -139,36 +265,47 @@ class StateManager {
 
     /**
      * Load search pattern state (sort and filter)
+     * Now loads from database via loadGridStateFromDatabase
      */
-    loadSearchPatternState() {
+    async loadSearchPatternState() {
+        const gridState = await this.loadGridStateFromDatabase();
+        const searchpattern = gridState.searchpattern || {};
+        
         const result = {
             sortColumn: null,
             sortDirection: 'asc',
             searchValues: {},
             filterOperations: {}
         };
-
-        try {
-            const fullState = this.loadFullState();
-            const searchpattern = fullState.searchpattern || {};
-            
-            // Load sort state
-            if (searchpattern.sortColumn !== undefined && searchpattern.sortColumn !== null) {
-                result.sortColumn = searchpattern.sortColumn;
-            }
-            if (searchpattern.sortDirection) {
-                result.sortDirection = searchpattern.sortDirection;
-            }
-            
-            // Load filter state
-            if (searchpattern.searchValues) {
+        
+        // Load sort state
+        if (searchpattern.sortColumn !== undefined && searchpattern.sortColumn !== null) {
+            result.sortColumn = searchpattern.sortColumn;
+        }
+        if (searchpattern.sortDirection) {
+            result.sortDirection = searchpattern.sortDirection;
+        }
+        
+        // Load filter state - ensure they are objects, not arrays
+        if (searchpattern.searchValues) {
+            // If it's an array (from old data), convert to empty object
+            if (Array.isArray(searchpattern.searchValues)) {
+                result.searchValues = {};
+            } else if (typeof searchpattern.searchValues === 'object') {
                 result.searchValues = searchpattern.searchValues;
+            } else {
+                result.searchValues = {};
             }
-            if (searchpattern.filterOperations) {
+        }
+        if (searchpattern.filterOperations) {
+            // If it's an array (from old data), convert to empty object
+            if (Array.isArray(searchpattern.filterOperations)) {
+                result.filterOperations = {};
+            } else if (typeof searchpattern.filterOperations === 'object') {
                 result.filterOperations = searchpattern.filterOperations;
+            } else {
+                result.filterOperations = {};
             }
-        } catch (e) {
-            console.warn('Failed to load search pattern state:', e);
         }
 
         return result;
@@ -176,7 +313,7 @@ class StateManager {
 
     /**
      * Legacy method for backward compatibility
-     * @deprecated Use saveLayoutState or saveState instead
+     * @deprecated Use loadLayoutState instead
      */
     loadState() {
         return this.loadLayoutState();

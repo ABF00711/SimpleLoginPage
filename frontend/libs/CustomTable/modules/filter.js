@@ -329,6 +329,11 @@ class Filter {
                 const colKey = input.getAttribute('data-column-key');
                 const value = input.value.trim();
                 
+                // Ensure searchValues is an object, not an array
+                if (!this.table.searchValues || Array.isArray(this.table.searchValues)) {
+                    this.table.searchValues = {};
+                }
+                
                 // Update search values
                 if (value === '') {
                     delete this.table.searchValues[colKey];
@@ -336,13 +341,13 @@ class Filter {
                     this.table.searchValues[colKey] = value;
                 }
                 
+                // Debug: log the search value being set
+                console.log('Setting search value:', colKey, '=', value);
+                console.log('Current searchValues:', this.table.searchValues);
+                
                 // Save search pattern state
-                this.table.stateManager.saveSearchPatternState(
-                    this.table.sorter.sortColumn,
-                    this.table.sorter.sortDirection,
-                    this.table.searchValues,
-                    this.table.filterOperations
-                );
+                // Trigger auto-save
+                this.table.autoSaveGridState();
                 
                 // Debounce filtering to avoid excessive re-renders
                 clearTimeout(debounceTimer);
@@ -456,12 +461,8 @@ class Filter {
                 this.table.filterOperations[colKey] = operation;
                 
                 // Save search pattern state
-                this.table.stateManager.saveSearchPatternState(
-                    this.table.sorter.sortColumn,
-                    this.table.sorter.sortDirection,
-                    this.table.searchValues,
-                    this.table.filterOperations
-                );
+                // Trigger auto-save
+                this.table.autoSaveGridState();
                 
                 // Update UI - remove selected class from all items, add to clicked
                 const allItems = this.table.container.querySelectorAll(`.filter-operation-item[data-column-key="${colKey}"]`);

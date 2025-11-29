@@ -62,12 +62,8 @@ class Sorter {
         this.updateSortIcons();
         
         // Save search pattern state (including sort)
-        this.table.stateManager.saveSearchPatternState(
-            this.sortColumn,
-            this.sortDirection,
-            this.table.searchValues,
-            this.table.filterOperations
-        );
+        // Trigger auto-save
+        this.table.autoSaveGridState();
     }
 
     updateSortIcons() {

@@ -87,8 +87,9 @@
             
             // Initialize CustomTable
             const customersTable = new TableModuleClass('customers-table', {
-                // Set form name for add modal
+                // Set form name for add modal and table name for grid_state
                 formName: currentFormName,
+                tableName: currentFormName, // Use formName as tableName for grid_state
                 data: result.data,
                 columns: result.columns,
                 storageKey: `table_customers_${currentFormName}`,

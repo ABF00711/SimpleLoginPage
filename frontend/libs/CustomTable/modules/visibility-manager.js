@@ -25,17 +25,8 @@ class VisibilityManager {
             console.warn('Column not found for key:', colKey);
         }
         
-        this.table.stateManager.saveLayoutState(
-            this.table.columnWidths,
-            this.table.columnOrder,
-            this.table.columnVisibility
-        );
-        this.table.stateManager.saveSearchPatternState(
-            this.table.sorter.sortColumn,
-            this.table.sorter.sortDirection,
-            this.table.searchValues,
-            this.table.filterOperations
-        );
+        // Trigger auto-save
+        this.table.autoSaveGridState();
         this.table.render();
         
         // Re-open dropdown if it was open before rendering
@@ -63,17 +54,8 @@ class VisibilityManager {
             column.visible = true;
         });
         
-        this.table.stateManager.saveLayoutState(
-            this.table.columnWidths,
-            this.table.columnOrder,
-            this.table.columnVisibility
-        );
-        this.table.stateManager.saveSearchPatternState(
-            this.table.sorter.sortColumn,
-            this.table.sorter.sortDirection,
-            this.table.searchValues,
-            this.table.filterOperations
-        );
+        // Trigger auto-save
+        this.table.autoSaveGridState();
         this.table.render();
         
         // Re-open dropdown if it was open before rendering
