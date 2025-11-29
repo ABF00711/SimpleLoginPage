@@ -291,7 +291,9 @@
 /* Icon classes using Smart UI icon font */
 .table-icon-add::before,
 .table-icon-delete::before,
-.table-icon-eye::before {
+.table-icon-eye::before,
+.table-icon-search::before,
+.table-icon-layout::before {
     font-family: var(--smart-font-family-icon);
     font-style: normal;
     font-weight: normal;
@@ -325,7 +327,9 @@
 
 /* Add and Delete button styling */
 .table-add-btn,
-.table-delete-btn {
+.table-delete-btn,
+.table-search-pattern-btn,
+.table-layout-btn {
     display: inline-flex;
     align-items: center;
     gap: 0.5rem;
@@ -371,6 +375,22 @@
     background-color: #6c757d !important;
     cursor: not-allowed;
     opacity: 0.6;
+}
+
+.table-search-pattern-btn {
+    background-color: #17a2b8 !important;
+}
+
+.table-search-pattern-btn:hover {
+    background-color: #138496 !important;
+}
+
+.table-layout-btn {
+    background-color: #6f42c1 !important;
+}
+
+.table-layout-btn:hover {
+    background-color: #5a32a3 !important;
 }
 
 /* Edit button styling (in Action column) */
@@ -1104,4 +1124,205 @@
 
 .smart-tab-close-button{
     display: block !important;
+}
+
+/* Pattern Modal Styles - Improved */
+.pattern-modal {
+    position: absolute;
+    z-index: 10001;
+    background-color: #ffffff;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15), 0 2px 4px rgba(0, 0, 0, 0.1);
+    min-width: 320px;
+    max-width: 400px;
+    width: auto;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    overflow: visible; /* Allow dropdown to overflow */
+}
+
+.pattern-modal-content {
+    display: flex;
+    flex-direction: column;
+    overflow: visible; /* Allow dropdown to overflow */
+}
+
+.pattern-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 16px;
+    border-bottom: 1px solid #e8e8e8;
+    background-color: #f8f9fa;
+    border-radius: 8px 8px 0 0;
+}
+
+.pattern-modal-title {
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: #2c3e50;
+    letter-spacing: 0.01em;
+}
+
+.pattern-modal-close {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    color: #6c757d;
+    cursor: pointer;
+    padding: 0;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+}
+
+.pattern-modal-close:hover {
+    background-color: #e9ecef;
+    color: #495057;
+}
+
+.pattern-modal-close:active {
+    background-color: #dee2e6;
+}
+
+.pattern-modal-body {
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    background-color: #ffffff;
+    overflow: visible; /* Allow dropdown to overflow */
+}
+
+.pattern-dropdown-wrapper {
+    position: relative;
+    width: 100%;
+}
+
+.pattern-dropdown-input {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #ced4da;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    box-sizing: border-box;
+    transition: all 0.2s ease;
+    background-color: #ffffff;
+    color: #495057;
+}
+
+.pattern-dropdown-input:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+}
+
+.pattern-dropdown-input::placeholder {
+    color: #adb5bd;
+}
+
+.pattern-dropdown-list {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background-color: #ffffff;
+    border: 1px solid #ced4da;
+    border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    max-height: 220px;
+    overflow-y: auto;
+    margin-top: 4px;
+    display: none;
+    z-index: 10003; /* Higher than modal to ensure it's visible */
+}
+
+.pattern-dropdown-item {
+    padding: 10px 12px;
+    cursor: pointer;
+    font-size: 0.875rem;
+    border-bottom: 1px solid #f0f0f0;
+    color: #495057;
+    transition: background-color 0.15s ease;
+}
+
+.pattern-dropdown-item:last-child {
+    border-bottom: none;
+}
+
+.pattern-dropdown-item:hover {
+    background-color: #f8f9fa;
+    color: #212529;
+}
+
+.pattern-dropdown-item:active {
+    background-color: #e9ecef;
+}
+
+.pattern-modal-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+    padding-top: 4px;
+}
+
+.pattern-btn {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-weight: 500;
+    min-width: 70px;
+}
+
+.pattern-btn-apply {
+    background-color: #007bff;
+    color: #ffffff;
+}
+
+.pattern-btn-apply:hover {
+    background-color: #0056b3;
+    box-shadow: 0 2px 4px rgba(0, 123, 255, 0.3);
+}
+
+.pattern-btn-apply:active {
+    background-color: #004085;
+    transform: translateY(1px);
+}
+
+.pattern-btn-save {
+    background-color: #28a745;
+    color: #ffffff;
+}
+
+.pattern-btn-save:hover {
+    background-color: #218838;
+    box-shadow: 0 2px 4px rgba(40, 167, 69, 0.3);
+}
+
+.pattern-btn-save:active {
+    background-color: #1e7e34;
+    transform: translateY(1px);
+}
+
+.pattern-btn-delete {
+    background-color: #dc3545;
+    color: #ffffff;
+}
+
+.pattern-btn-delete:hover {
+    background-color: #c82333;
+    box-shadow: 0 2px 4px rgba(220, 53, 69, 0.3);
+}
+
+.pattern-btn-delete:active {
+    background-color: #bd2130;
+    transform: translateY(1px);
 }

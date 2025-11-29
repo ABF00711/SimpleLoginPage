@@ -72,6 +72,14 @@ class Renderer {
         html += '<span class="table-btn-icon table-icon-delete"></span>';
         html += '<span class="table-btn-text">Delete</span>';
         html += '</button>';
+        html += '<button type="button" class="table-search-pattern-btn" title="Manage search patterns">';
+        html += '<span class="table-btn-icon table-icon-search"></span>';
+        html += '<span class="table-btn-text">Search</span>';
+        html += '</button>';
+        html += '<button type="button" class="table-layout-btn" title="Manage layouts">';
+        html += '<span class="table-btn-icon table-icon-layout"></span>';
+        html += '<span class="table-btn-text">Layout</span>';
+        html += '</button>';
         html += '<button type="button" class="show-columns-btn" title="Show/Hide columns">';
         html += '<span class="show-columns-icon table-icon-eye"></span>';
         html += '<span class="show-columns-text">Hide</span>';
@@ -583,6 +591,34 @@ class Renderer {
             // Initialize Delete button state
             this.updateDeleteButtonState();
         }
+
+        // Attach Search Pattern button
+        const searchPatternBtn = this.table.container.querySelector('.table-search-pattern-btn');
+        if (searchPatternBtn) {
+            const newSearchBtn = searchPatternBtn.cloneNode(true);
+            searchPatternBtn.parentNode.replaceChild(newSearchBtn, searchPatternBtn);
+            const newSearchBtnRef = this.table.container.querySelector('.table-search-pattern-btn');
+            
+            newSearchBtnRef.addEventListener('click', (e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                this.handleSearchPatternClick(newSearchBtnRef);
+            });
+        }
+
+        // Attach Layout button
+        const layoutBtn = this.table.container.querySelector('.table-layout-btn');
+        if (layoutBtn) {
+            const newLayoutBtn = layoutBtn.cloneNode(true);
+            layoutBtn.parentNode.replaceChild(newLayoutBtn, layoutBtn);
+            const newLayoutBtnRef = this.table.container.querySelector('.table-layout-btn');
+            
+            newLayoutBtnRef.addEventListener('click', (e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                this.handleLayoutClick(newLayoutBtnRef);
+            });
+        }
     }
 
     updateDeleteButtonState() {
@@ -636,6 +672,46 @@ class Renderer {
             }
         });
         this.table.container.dispatchEvent(event);
+    }
+
+    handleSearchPatternClick(button) {
+        // Hide any existing modals first
+        const allModals = document.querySelectorAll('.pattern-modal');
+        allModals.forEach(modal => {
+            modal.style.display = 'none';
+            modal.remove();
+        });
+        
+        // Initialize pattern manager if not exists
+        if (!this.table.patternManager) {
+            if (typeof PatternManager !== 'undefined') {
+                this.table.patternManager = new PatternManager(this.table, 'searchpattern');
+            } else {
+                console.error('PatternManager not available');
+                return;
+            }
+        }
+        this.table.patternManager.show(button, 'searchpattern');
+    }
+
+    handleLayoutClick(button) {
+        // Hide any existing modals first
+        const allModals = document.querySelectorAll('.pattern-modal');
+        allModals.forEach(modal => {
+            modal.style.display = 'none';
+            modal.remove();
+        });
+        
+        // Initialize pattern manager if not exists
+        if (!this.table.patternManager) {
+            if (typeof PatternManager !== 'undefined') {
+                this.table.patternManager = new PatternManager(this.table, 'layout');
+            } else {
+                console.error('PatternManager not available');
+                return;
+            }
+        }
+        this.table.patternManager.show(button, 'layout');
     }
 }
 

@@ -1,7 +1,14 @@
 <?php
 
+// Suppress any output before JSON
+ob_start();
+
 header('Content-Type: application/json');
+session_start();
 require_once __DIR__ . '/db.php';
+
+// Clear any output buffer before sending JSON
+ob_end_clean();
 
 // Get action from request (check GET, POST first)
 $action = $_GET['action'] ?? $_POST['action'] ?? null;
@@ -37,11 +44,23 @@ switch ($action) {
     case 'update':
         handleUpdateTableData($jsonBody);
         break;
+    case 'getPatterns':
+        handleGetPatterns($jsonBody);
+        break;
+    case 'getPattern':
+        handleGetPattern($jsonBody);
+        break;
+    case 'savePattern':
+        handleSavePattern($jsonBody);
+        break;
+    case 'deletePattern':
+        handleDeletePattern($jsonBody);
+        break;
     default:
         http_response_code(400);
         echo json_encode([
             'status' => 'error',
-            'message' => 'Invalid action. Use "get", "delete", "add", "update", "getFields", or "getLookupData"'
+            'message' => 'Invalid action. Use "get", "delete", "add", "update", "getFields", "getLookupData", "getPatterns", "getPattern", "savePattern", or "deletePattern"'
         ]);
         exit;
 }
@@ -1027,6 +1046,295 @@ function extractColumnNameFromLookupSql($lookupSql) {
     
     // Default to 'name' if not found
     return 'name';
+}
+
+/**
+ * Handle GET request for patterns list
+ */
+function handleGetPatterns($jsonBody = null) {
+    global $conn;
+    
+    try {
+        $userId = $_SESSION['user_id'] ?? null;
+        
+        if (!$userId) {
+            throw new Exception('User not authenticated');
+        }
+        
+        if ($jsonBody === null) {
+            $jsonInput = file_get_contents('php://input');
+            $data = json_decode($jsonInput, true);
+        } else {
+            $data = $jsonBody;
+        }
+        
+        $type = $data['type'] ?? ''; // 'searchpattern' or 'layout'
+        $formTableName = $data['tableName'] ?? '';
+        
+        if (!$type || !$formTableName) {
+            throw new Exception('Type and tableName are required');
+        }
+        
+        $dbTableName = $type === 'searchpattern' ? 'grid_searchpatterns' : 'grid_layouts';
+        
+        $sql = "SELECT id, name, data, created_at FROM `$dbTableName` WHERE user_id = ? AND table_name = ? ORDER BY created_at DESC";
+        $stmt = $conn->prepare($sql);
+        if (!$stmt) {
+            throw new Exception('Failed to prepare query: ' . $conn->error);
+        }
+        
+        $stmt->bind_param("ss", $userId, $formTableName);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        
+        $patterns = [];
+        while ($row = $result->fetch_assoc()) {
+            $patterns[] = [
+                'id' => $row['id'],
+                'name' => $row['name'],
+                'data' => $row['data'],
+                'created_at' => $row['created_at']
+            ];
+        }
+        $stmt->close();
+        
+        echo json_encode([
+            'status' => 'success',
+            'data' => $patterns
+        ]);
+        
+    } catch (Exception $e) {
+        http_response_code(500);
+        echo json_encode([
+            'status' => 'error',
+            'message' => $e->getMessage()
+        ]);
+    } catch (Error $e) {
+        http_response_code(500);
+        echo json_encode([
+            'status' => 'error',
+            'message' => $e->getMessage()
+        ]);
+    }
+}
+
+/**
+ * Handle GET request for single pattern
+ */
+function handleGetPattern($jsonBody = null) {
+    global $conn;
+    
+    try {
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+        $userId = $_SESSION['user_id'] ?? null;
+        
+        if (!$userId) {
+            throw new Exception('User not authenticated');
+        }
+        
+        if ($jsonBody === null) {
+            $jsonInput = file_get_contents('php://input');
+            $data = json_decode($jsonInput, true);
+        } else {
+            $data = $jsonBody;
+        }
+        
+        $type = $data['type'] ?? '';
+        $id = $data['id'] ?? null;
+        
+        if (!$type || !$id) {
+            throw new Exception('Type and id are required');
+        }
+        
+        $dbTableName = $type === 'searchpattern' ? 'grid_searchpatterns' : 'grid_layouts';
+        
+        $sql = "SELECT id, name, data FROM `$dbTableName` WHERE id = ? AND user_id = ? LIMIT 1";
+        $stmt = $conn->prepare($sql);
+        if (!$stmt) {
+            throw new Exception('Failed to prepare query: ' . $conn->error);
+        }
+        
+        $stmt->bind_param("is", $id, $userId);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        
+        if ($result->num_rows === 0) {
+            $stmt->close();
+            throw new Exception('Pattern not found');
+        }
+        
+        $row = $result->fetch_assoc();
+        $stmt->close();
+        
+        echo json_encode([
+            'status' => 'success',
+            'data' => $row
+        ]);
+        
+    } catch (Exception $e) {
+        http_response_code(500);
+        echo json_encode([
+            'status' => 'error',
+            'message' => $e->getMessage()
+        ]);
+    } catch (Error $e) {
+        http_response_code(500);
+        echo json_encode([
+            'status' => 'error',
+            'message' => $e->getMessage()
+        ]);
+    }
+}
+
+/**
+ * Handle SAVE request for pattern
+ */
+function handleSavePattern($jsonBody = null) {
+    global $conn;
+    
+    try {
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+        $userId = $_SESSION['user_id'] ?? null;
+        
+        if (!$userId) {
+            throw new Exception('User not authenticated');
+        }
+        
+        if ($jsonBody === null) {
+            $jsonInput = file_get_contents('php://input');
+            $data = json_decode($jsonInput, true);
+        } else {
+            $data = $jsonBody;
+        }
+        
+        $type = $data['type'] ?? '';
+        $formTableName = $data['tableName'] ?? '';
+        $name = $data['name'] ?? '';
+        $patternData = $data['data'] ?? '';
+        $id = $data['id'] ?? null;
+        
+        if (!$type || !$formTableName || !$name || !$patternData) {
+            throw new Exception('Type, tableName, name, and data are required');
+        }
+        
+        $dbTableName = $type === 'searchpattern' ? 'grid_searchpatterns' : 'grid_layouts';
+        
+        if ($id) {
+            // Update existing pattern
+            $sql = "UPDATE `$dbTableName` SET name = ?, data = ? WHERE id = ? AND user_id = ?";
+            $stmt = $conn->prepare($sql);
+            if (!$stmt) {
+                throw new Exception('Failed to prepare update query: ' . $conn->error);
+            }
+            $stmt->bind_param("ssis", $name, $patternData, $id, $userId);
+        } else {
+            // Insert new pattern
+            $sql = "INSERT INTO `$dbTableName` (table_name, user_id, name, data) VALUES (?, ?, ?, ?)";
+            $stmt = $conn->prepare($sql);
+            if (!$stmt) {
+                throw new Exception('Failed to prepare insert query: ' . $conn->error);
+            }
+            $stmt->bind_param("ssss", $formTableName, $userId, $name, $patternData);
+        }
+        
+        if ($stmt->execute()) {
+            $insertedId = $id ? $id : $conn->insert_id;
+            $stmt->close();
+            
+            echo json_encode([
+                'status' => 'success',
+                'message' => $id ? 'Pattern updated successfully' : 'Pattern saved successfully',
+                'id' => $insertedId
+            ]);
+        } else {
+            throw new Exception('Failed to execute query: ' . $stmt->error);
+        }
+        
+    } catch (Exception $e) {
+        http_response_code(500);
+        echo json_encode([
+            'status' => 'error',
+            'message' => $e->getMessage()
+        ]);
+    } catch (Error $e) {
+        http_response_code(500);
+        echo json_encode([
+            'status' => 'error',
+            'message' => $e->getMessage()
+        ]);
+    }
+}
+
+/**
+ * Handle DELETE request for pattern
+ */
+function handleDeletePattern($jsonBody = null) {
+    global $conn;
+    
+    try {
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+        $userId = $_SESSION['user_id'] ?? null;
+        
+        if (!$userId) {
+            throw new Exception('User not authenticated');
+        }
+        
+        if ($jsonBody === null) {
+            $jsonInput = file_get_contents('php://input');
+            $data = json_decode($jsonInput, true);
+        } else {
+            $data = $jsonBody;
+        }
+        
+        $type = $data['type'] ?? '';
+        $id = $data['id'] ?? null;
+        
+        if (!$type || !$id) {
+            throw new Exception('Type and id are required');
+        }
+        
+        $dbTableName = $type === 'searchpattern' ? 'grid_searchpatterns' : 'grid_layouts';
+        
+        $sql = "DELETE FROM `$dbTableName` WHERE id = ? AND user_id = ?";
+        $stmt = $conn->prepare($sql);
+        if (!$stmt) {
+            throw new Exception('Failed to prepare delete query: ' . $conn->error);
+        }
+        
+        $stmt->bind_param("is", $id, $userId);
+        
+        if ($stmt->execute()) {
+            $affectedRows = $stmt->affected_rows;
+            $stmt->close();
+            
+            echo json_encode([
+                'status' => 'success',
+                'message' => 'Pattern deleted successfully',
+                'affectedRows' => $affectedRows
+            ]);
+        } else {
+            throw new Exception('Failed to execute delete query: ' . $stmt->error);
+        }
+        
+    } catch (Exception $e) {
+        http_response_code(500);
+        echo json_encode([
+            'status' => 'error',
+            'message' => $e->getMessage()
+        ]);
+    } catch (Error $e) {
+        http_response_code(500);
+        echo json_encode([
+            'status' => 'error',
+            'message' => $e->getMessage()
+        ]);
+    }
 }
 
 // Close connection at the end
