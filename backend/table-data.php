@@ -172,6 +172,28 @@ function handleGetTableData() {
         
         $data = [];
         while ($row = $dataResult->fetch_assoc()) {
+            // Convert invalid dates ("0000-00-00") to NULL for all date fields
+            foreach ($columns as $column) {
+                if ($column['column_type'] === 'date' && isset($row[$column['column_name']])) {
+                    $dateValue = $row[$column['column_name']];
+                    // Check if date is invalid (0000-00-00 or starts with 0000-)
+                    if ($dateValue === '0000-00-00' || (is_string($dateValue) && strpos($dateValue, '0000-') === 0)) {
+                        $row[$column['column_name']] = null;
+                    } else if ($dateValue && is_string($dateValue)) {
+                        // Validate date format
+                        $dateParts = explode('-', $dateValue);
+                        if (count($dateParts) === 3) {
+                            $year = intval($dateParts[0]);
+                            $month = intval($dateParts[1]);
+                            $day = intval($dateParts[2]);
+                            // If year is 0 or invalid, set to NULL
+                            if ($year === 0 || $month === 0 || $day === 0 || $month > 12 || $day > 31) {
+                                $row[$column['column_name']] = null;
+                            }
+                        }
+                    }
+                }
+            }
             $data[] = $row;
         }
         
@@ -716,6 +738,76 @@ function handleAddTableData($jsonBody = null) {
                             }
                             $checkStmt->close();
                         }
+                    }
+                }
+                
+                // Handle invalid dates - convert "0000-00-00" or invalid dates to NULL
+                if (isset($comboboxFields[$fieldName])) {
+                    // Already handled combobox above
+                } else {
+                    // Check if this is a date field and validate it
+                    $fieldTypeSql = "SELECT field_type FROM data_config WHERE table_name = ? AND field_name = ? LIMIT 1";
+                    $fieldTypeStmt = $conn->prepare($fieldTypeSql);
+                    if ($fieldTypeStmt) {
+                        $fieldTypeStmt->bind_param("ss", $tableView, $fieldName);
+                        $fieldTypeStmt->execute();
+                        $fieldTypeResult = $fieldTypeStmt->get_result();
+                        if ($fieldTypeResult->num_rows > 0) {
+                            $fieldTypeRow = $fieldTypeResult->fetch_assoc();
+                            if ($fieldTypeRow['field_type'] === 'date' && $value !== '' && $value !== null) {
+                                // Validate date - reject "0000-00-00" or invalid dates
+                                if ($value === '0000-00-00' || strpos($value, '0000-') === 0) {
+                                    $value = null;
+                                } else {
+                                    // Try to validate the date format
+                                    $dateParts = explode('-', $value);
+                                    if (count($dateParts) === 3) {
+                                        $year = intval($dateParts[0]);
+                                        $month = intval($dateParts[1]);
+                                        $day = intval($dateParts[2]);
+                                        // If year is 0 or invalid, set to NULL
+                                        if ($year === 0 || $month === 0 || $day === 0 || $month > 12 || $day > 31) {
+                                            $value = null;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        $fieldTypeStmt->close();
+                    }
+                }
+                
+                // Handle invalid dates - convert "0000-00-00" or invalid dates to NULL
+                if (!isset($comboboxFields[$fieldName])) {
+                    // Check if this is a date field and validate it
+                    $fieldTypeSql = "SELECT field_type FROM data_config WHERE table_name = ? AND field_name = ? LIMIT 1";
+                    $fieldTypeStmt = $conn->prepare($fieldTypeSql);
+                    if ($fieldTypeStmt) {
+                        $fieldTypeStmt->bind_param("ss", $tableView, $fieldName);
+                        $fieldTypeStmt->execute();
+                        $fieldTypeResult = $fieldTypeStmt->get_result();
+                        if ($fieldTypeResult->num_rows > 0) {
+                            $fieldTypeRow = $fieldTypeResult->fetch_assoc();
+                            if ($fieldTypeRow['field_type'] === 'date' && $value !== '' && $value !== null) {
+                                // Validate date - reject "0000-00-00" or invalid dates
+                                if ($value === '0000-00-00' || strpos($value, '0000-') === 0) {
+                                    $value = null;
+                                } else {
+                                    // Try to validate the date format
+                                    $dateParts = explode('-', $value);
+                                    if (count($dateParts) === 3) {
+                                        $year = intval($dateParts[0]);
+                                        $month = intval($dateParts[1]);
+                                        $day = intval($dateParts[2]);
+                                        // If year is 0 or invalid, set to NULL
+                                        if ($year === 0 || $month === 0 || $day === 0 || $month > 12 || $day > 31) {
+                                            $value = null;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        $fieldTypeStmt->close();
                     }
                 }
                 

@@ -30,19 +30,29 @@ class Formatter {
                 return (value) => {
                     if (!value) return '';
                     
+                    // Handle invalid MySQL dates like "0000-00-00"
+                    if (typeof value === 'string' && (value === '0000-00-00' || value.startsWith('0000-'))) {
+                        return '';
+                    }
+                    
                     let date;
                     
                     // If it's a string in YYYY-MM-DD format, parse as LOCAL date to avoid UTC timezone issues
                     if (typeof value === 'string') {
                         const isoMatch = value.match(/^(\d{4})-(\d{2})-(\d{2})/);
                         if (isoMatch) {
+                            const year = parseInt(isoMatch[1], 10);
+                            const month = parseInt(isoMatch[2], 10);
+                            const day = parseInt(isoMatch[3], 10);
+                            
+                            // Validate date components - reject invalid dates
+                            if (year === 0 || month === 0 || day === 0 || month > 12 || day > 31) {
+                                return '';
+                            }
+                            
                             // Parse as local date by creating Date with explicit components
                             // This avoids UTC interpretation: new Date('2024-01-15') interprets as UTC
-                            date = new Date(
-                                parseInt(isoMatch[1], 10),      // Year
-                                parseInt(isoMatch[2], 10) - 1,  // Month (0-indexed)
-                                parseInt(isoMatch[3], 10)       // Day
-                            );
+                            date = new Date(year, month - 1, day);
                         } else {
                             // For other date string formats, try standard parsing
                             date = new Date(value);
@@ -53,7 +63,12 @@ class Formatter {
                         date = new Date(value);
                     }
                     
-                    if (isNaN(date.getTime())) return value;
+                    // Check if date is valid
+                    if (isNaN(date.getTime())) return '';
+                    
+                    // Additional check: if year is 0 or negative, it's invalid
+                    if (date.getFullYear() <= 0) return '';
+                    
                     return date.toLocaleDateString('en-US', {
                         year: 'numeric',
                         month: 'short',

@@ -134,13 +134,25 @@ class AddModal {
                     break;
 
                 case 'date':
+                    // Handle invalid dates like "0000-00-00" - treat as empty
+                    // We'll set the value programmatically in initializeDateInputs() after Smart UI upgrades
+                    // For now, just set empty value attribute - it will be set properly after upgrade
+                    let dateValue = '';
+                    if (this.editMode && this.editRowData && existingValue) {
+                        // Store the raw value - we'll process it in initializeDateInputs
+                        dateValue = existingValue;
+                        // Quick check for invalid dates
+                        if (typeof dateValue === 'string' && (dateValue === '0000-00-00' || dateValue.startsWith('0000-'))) {
+                            dateValue = '';
+                        }
+                    }
                     modalHTML += `
                         <smart-date-input
                             data-field="${field.field_name}"
                             placeholder="Select ${field.field_label.toLowerCase()}"
                             class="underlined"
                             form-control-name="${field.field_name}"
-                            value="${this.escapeHtml(existingValue)}"
+                            ${dateValue ? `data-initial-value="${this.escapeHtml(dateValue)}"` : ''}
                             required
                         ></smart-date-input>
                     `;
@@ -207,9 +219,93 @@ class AddModal {
         
         // Wait for Smart UI to upgrade elements, then initialize
         setTimeout(() => {
+            this.initializeDateInputs();
             this.initializeComboboxes();
             this.attachEventListeners();
         }, 100);
+    }
+
+    initializeDateInputs() {
+        // Find date input fields (smart-date-input)
+        const dateFields = this.fields.filter(f => f.field_type === 'date');
+        
+        for (const field of dateFields) {
+            const dateInput = this.modal.querySelector(`smart-date-input[data-field="${field.field_name}"]`);
+            if (!dateInput) continue;
+            
+            // Get initial value from data attribute or editRowData
+            let dateValue = null;
+            if (this.editMode && this.editRowData && this.editRowData[field.field_name]) {
+                dateValue = this.editRowData[field.field_name];
+            } else {
+                // Check data attribute as fallback
+                const initialValue = dateInput.getAttribute('data-initial-value');
+                if (initialValue) {
+                    dateValue = initialValue;
+                }
+            }
+            
+            // Handle invalid dates like "0000-00-00" - treat as empty
+            if (dateValue) {
+                // Convert to string if needed
+                if (typeof dateValue !== 'string') {
+                    dateValue = String(dateValue);
+                }
+                // Check if it's an invalid date
+                if (dateValue === '0000-00-00' || (typeof dateValue === 'string' && dateValue.startsWith('0000-'))) {
+                    dateValue = null;
+                } else if (typeof dateValue === 'string') {
+                    // Validate and format the date string to YYYY-MM-DD
+                    const dateMatch = dateValue.match(/^(\d{4})-(\d{2})-(\d{2})/);
+                    if (dateMatch) {
+                        const year = parseInt(dateMatch[1], 10);
+                        const month = parseInt(dateMatch[2], 10);
+                        const day = parseInt(dateMatch[3], 10);
+                        // Validate date components
+                        if (year === 0 || month === 0 || day === 0 || month > 12 || day > 31) {
+                            dateValue = null;
+                        } else {
+                            // Additional validation: check if the date is actually valid
+                            const date = new Date(year, month - 1, day);
+                            if (isNaN(date.getTime()) || date.getFullYear() !== year || date.getMonth() !== month - 1 || date.getDate() !== day) {
+                                dateValue = null;
+                            } else {
+                                // Ensure format is YYYY-MM-DD
+                                dateValue = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                            }
+                        }
+                    } else {
+                        // Try to parse and reformat
+                        const parsedDate = new Date(dateValue);
+                        if (!isNaN(parsedDate.getTime()) && parsedDate.getFullYear() > 0) {
+                            const year = parsedDate.getFullYear();
+                            const month = String(parsedDate.getMonth() + 1).padStart(2, '0');
+                            const day = String(parsedDate.getDate()).padStart(2, '0');
+                            dateValue = `${year}-${month}-${day}`;
+                        } else {
+                            dateValue = null;
+                        }
+                    }
+                }
+            }
+            
+            // Set the value using Smart UI's setValue method
+            if (dateValue && typeof dateInput.setValue === 'function') {
+                try {
+                    dateInput.setValue(dateValue);
+                } catch (error) {
+                    console.error('Error setting date value:', error);
+                    // Fallback to setting value property
+                    dateInput.value = dateValue;
+                }
+            } else if (dateValue) {
+                // Fallback if setValue is not available
+                dateInput.value = dateValue;
+            } else {
+                // Clear the value
+                dateInput.value = null;
+            }
+        }
     }
 
     async initializeComboboxes() {
@@ -631,7 +727,71 @@ class AddModal {
                     ? input.selectedValues[0] 
                     : (input.value || '');
             } else if (input.tagName === 'SMART-DATE-INPUT') {
-                value = input.value || '';
+                // Use getValue() method to get the date in YYYY-MM-DD format
+                try {
+                    if (typeof input.getValue === 'function') {
+                        value = input.getValue();
+                    } else {
+                        value = input.value || '';
+                    }
+                    
+                    // Convert to string if it's not already
+                    if (value && typeof value !== 'string') {
+                        // If it's a Date object, format it as YYYY-MM-DD
+                        if (value instanceof Date) {
+                            if (isNaN(value.getTime())) {
+                                value = '';
+                            } else {
+                                const year = value.getFullYear();
+                                const month = String(value.getMonth() + 1).padStart(2, '0');
+                                const day = String(value.getDate()).padStart(2, '0');
+                                value = `${year}-${month}-${day}`;
+                            }
+                        } else {
+                            value = String(value);
+                        }
+                    }
+                    
+                    // Validate date - if it's invalid or "0000-00-00", set to empty
+                    if (value && typeof value === 'string') {
+                        if (value === '0000-00-00' || value.startsWith('0000-')) {
+                            value = '';
+                        } else {
+                            // Validate the date format
+                            const dateMatch = value.match(/^(\d{4})-(\d{2})-(\d{2})/);
+                            if (dateMatch) {
+                                const year = parseInt(dateMatch[1], 10);
+                                const month = parseInt(dateMatch[2], 10);
+                                const day = parseInt(dateMatch[3], 10);
+                                // Check if date components are valid
+                                if (year === 0 || month === 0 || day === 0 || month > 12 || day > 31) {
+                                    value = '';
+                                } else {
+                                    // Additional validation: check if the date is actually valid
+                                    const date = new Date(year, month - 1, day);
+                                    if (isNaN(date.getTime()) || date.getFullYear() !== year || date.getMonth() !== month - 1 || date.getDate() !== day) {
+                                        value = '';
+                                    }
+                                }
+                            } else {
+                                // Try to parse as date
+                                const date = new Date(value);
+                                if (isNaN(date.getTime())) {
+                                    value = '';
+                                } else {
+                                    // Format as YYYY-MM-DD
+                                    const year = date.getFullYear();
+                                    const month = String(date.getMonth() + 1).padStart(2, '0');
+                                    const day = String(date.getDate()).padStart(2, '0');
+                                    value = `${year}-${month}-${day}`;
+                                }
+                            }
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error getting date value:', error);
+                    value = '';
+                }
             } else if (input.tagName === 'SMART-FILE-UPLOAD') {
                 // Handle file upload
                 fileFields[key] = input.files || null;
