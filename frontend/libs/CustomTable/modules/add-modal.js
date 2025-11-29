@@ -9,9 +9,16 @@ class AddModal {
         this.modal = null;
         this.fields = [];
         this.lookupData = {}; // Cache for combobox lookup data
+        this.editMode = false;
+        this.editRowData = null;
+        this.editRowIndex = null;
     }
 
-    async show() {
+    async show(editRowData = null, editRowIndex = null) {
+        // Set edit mode if row data is provided
+        this.editMode = editRowData !== null;
+        this.editRowData = editRowData;
+        this.editRowIndex = editRowIndex;
         try {
             // Get form name from table options or storage key
             const formName = this.getFormName();
@@ -61,23 +68,38 @@ class AddModal {
     }
 
     createModal() {
+        // Create modal HTML
+        const modalLabel = this.editMode ? 'Edit Row' : 'Add New Row';
+        const modalId = this.editMode ? 'edit-row-modal' : 'add-row-modal';
+        const formId = this.editMode ? 'edit-row-form' : 'add-row-form';
+        
         // Remove existing modal if any
-        const existingModal = document.getElementById('add-row-modal');
+        const existingModal = document.getElementById(modalId);
         if (existingModal) {
             existingModal.remove();
         }
-
-        // Create modal HTML
+        
         let modalHTML = `
-            <smart-window id="add-row-modal" label="Add New Row" modal="true" resizable="false" 
+            <smart-window id="${modalId}" label="${modalLabel}" modal="true" resizable="false" 
                          style="width: 600px; max-width: 90vw; height: auto; max-height: 90vh;">
                 <div class="add-modal-content" style="overflow-y: auto; max-height: calc(90vh - 100px);">
-                    <form id="add-row-form" class="add-row-form">
+                    <form id="${formId}" class="add-row-form">
         `;
 
         // Generate form fields based on field configurations using Smart UI components
         // Fields are already filtered to only include those with non-empty labels
         this.fields.forEach(field => {
+            // Get existing value if in edit mode
+            let existingValue = '';
+            if (this.editMode && this.editRowData) {
+                existingValue = this.editRowData[field.field_name] || '';
+                // For combobox fields, we need to get the name from the lookup table
+                if (field.field_type === 'combobox' && existingValue) {
+                    // existingValue is likely an ID, we'll need to fetch the name
+                    // For now, we'll handle this in initializeComboboxes
+                }
+            }
+            
             modalHTML += `
                 <div class="smart-form-row">
                     <label>${this.escapeHtml(field.field_label)}</label>
@@ -91,6 +113,7 @@ class AddModal {
                             placeholder="Enter ${field.field_label.toLowerCase()}"
                             class="underlined"
                             form-control-name="${field.field_name}"
+                            value="${this.escapeHtml(existingValue)}"
                             required
                         ></smart-input>
                     `;
@@ -104,6 +127,7 @@ class AddModal {
                             class="underlined"
                             form-control-name="${field.field_name}"
                             type="number"
+                            value="${this.escapeHtml(existingValue)}"
                             required
                         ></smart-input>
                     `;
@@ -116,6 +140,7 @@ class AddModal {
                             placeholder="Select ${field.field_label.toLowerCase()}"
                             class="underlined"
                             form-control-name="${field.field_name}"
+                            value="${this.escapeHtml(existingValue)}"
                             required
                         ></smart-date-input>
                     `;
@@ -167,8 +192,8 @@ class AddModal {
                     </form>
                 </div>
                 <div class="modal-footer" style="padding: 15px 20px; border-top: 1px solid #eee; display: flex; justify-content: flex-end; gap: 10px;">
-                    <smart-button id="add-modal-cancel">Cancel</smart-button>
-                    <smart-button id="add-modal-submit" class="primary">Add</smart-button>
+                    <smart-button id="${this.editMode ? 'edit' : 'add'}-modal-cancel">Cancel</smart-button>
+                    <smart-button id="${this.editMode ? 'edit' : 'add'}-modal-submit" class="primary">${this.editMode ? 'Update' : 'Add'}</smart-button>
                 </div>
             </smart-window>
         `;
@@ -178,7 +203,7 @@ class AddModal {
         tempDiv.innerHTML = modalHTML;
         document.body.appendChild(tempDiv.firstElementChild);
 
-        this.modal = document.getElementById('add-row-modal');
+        this.modal = document.getElementById(modalId);
         
         // Wait for Smart UI to upgrade elements, then initialize
         setTimeout(() => {
@@ -197,6 +222,34 @@ class AddModal {
 
             // Load lookup data from job table
             await this.loadComboboxData(field.field_name, combobox);
+            
+            // If in edit mode, set the selected value
+            if (this.editMode && this.editRowData && this.editRowData[field.field_name]) {
+                // The value in editRowData is likely an ID, we need to get the name
+                const fieldValue = this.editRowData[field.field_name];
+                if (fieldValue) {
+                    // Fetch the name for this ID
+                    try {
+                        const response = await fetch('./backend/table-data.php', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                action: 'getLookupData',
+                                tableName: field.field_name,
+                                columnName: 'name',
+                                id: fieldValue
+                            })
+                        });
+                        const result = await response.json();
+                        if (result.status === 'success' && result.data && result.data.length > 0) {
+                            // Set selected value
+                            combobox.selectedValues = [result.data[0]];
+                        }
+                    } catch (error) {
+                        console.error('Error loading combobox value for edit:', error);
+                    }
+                }
+            }
         }
     }
 
@@ -486,9 +539,13 @@ class AddModal {
     }
 
     attachEventListeners() {
-        const form = this.modal.querySelector('#add-row-form');
-        const cancelBtn = this.modal.querySelector('#add-modal-cancel');
-        const submitBtn = this.modal.querySelector('#add-modal-submit');
+        const formId = this.editMode ? 'edit-row-form' : 'add-row-form';
+        const cancelBtnId = this.editMode ? 'edit-modal-cancel' : 'add-modal-cancel';
+        const submitBtnId = this.editMode ? 'edit-modal-submit' : 'add-modal-submit';
+        
+        const form = this.modal.querySelector(`#${formId}`);
+        const cancelBtn = this.modal.querySelector(`#${cancelBtnId}`);
+        const submitBtn = this.modal.querySelector(`#${submitBtnId}`);
 
         cancelBtn.addEventListener('click', () => {
             this.hide();
@@ -507,7 +564,8 @@ class AddModal {
     }
 
     async handleSubmit() {
-        const form = this.modal.querySelector('#add-row-form');
+        const formId = this.editMode ? 'edit-row-form' : 'add-row-form';
+        const form = this.modal.querySelector(`#${formId}`);
         
         // Validate required fields before submission
         const inputs = form.querySelectorAll('[data-field]');
@@ -588,15 +646,29 @@ class AddModal {
         });
 
         // Dispatch event with row data
-        const event = new CustomEvent('tableAddSubmit', {
-            detail: {
-                table: this.table,
-                rowData: rowData,
-                fileFields: fileFields,
-                tableName: this.tableName
-            }
-        });
-        this.table.container.dispatchEvent(event);
+        if (this.editMode) {
+            const event = new CustomEvent('tableEditSubmit', {
+                detail: {
+                    table: this.table,
+                    rowData: rowData,
+                    fileFields: fileFields,
+                    tableName: this.tableName,
+                    rowIndex: this.editRowIndex,
+                    originalRowData: this.editRowData
+                }
+            });
+            this.table.container.dispatchEvent(event);
+        } else {
+            const event = new CustomEvent('tableAddSubmit', {
+                detail: {
+                    table: this.table,
+                    rowData: rowData,
+                    fileFields: fileFields,
+                    tableName: this.tableName
+                }
+            });
+            this.table.container.dispatchEvent(event);
+        }
 
         // Hide modal
         this.hide();

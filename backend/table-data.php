@@ -34,11 +34,14 @@ switch ($action) {
     case 'add':
         handleAddTableData($jsonBody);
         break;
+    case 'update':
+        handleUpdateTableData($jsonBody);
+        break;
     default:
         http_response_code(400);
         echo json_encode([
             'status' => 'error',
-            'message' => 'Invalid action. Use "get", "delete", "add", "getFields", or "getLookupData"'
+            'message' => 'Invalid action. Use "get", "delete", "add", "update", "getFields", or "getLookupData"'
         ]);
         exit;
 }
@@ -465,6 +468,7 @@ function handleGetLookupData($jsonBody = null) {
         $lookupSql = $data['lookupSql'] ?? '';
         $tableName = $data['tableName'] ?? '';
         $columnName = $data['columnName'] ?? 'name';
+        $id = $data['id'] ?? null; // For edit mode - get specific value by ID
         
         if (!empty($lookupSql)) {
             // Old approach: execute lookup SQL query
@@ -742,6 +746,230 @@ function handleAddTableData($jsonBody = null) {
             ]);
         } else {
             throw new Exception('Failed to execute insert query: ' . $stmt->error);
+        }
+        
+    } catch (Exception $e) {
+        http_response_code(500);
+        echo json_encode([
+            'status' => 'error',
+            'message' => $e->getMessage()
+        ]);
+    } catch (Error $e) {
+        http_response_code(500);
+        echo json_encode([
+            'status' => 'error',
+            'message' => $e->getMessage()
+        ]);
+    }
+}
+
+/**
+ * Handle UPDATE request - update table data
+ */
+function handleUpdateTableData($jsonBody = null) {
+    global $conn;
+    
+    try {
+        // Use provided JSON body or read from input stream
+        if ($jsonBody === null) {
+            $jsonInput = file_get_contents('php://input');
+            $data = json_decode($jsonInput, true);
+            
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                throw new Exception('Invalid JSON: ' . json_last_error_msg());
+            }
+        } else {
+            $data = $jsonBody;
+        }
+        
+        $formName = $data['formName'] ?? null;
+        $rowData = $data['rowData'] ?? [];
+        $originalRowData = $data['originalRowData'] ?? [];
+        
+        if (!$formName) {
+            throw new Exception('FormName parameter is required');
+        }
+        
+        if (empty($rowData)) {
+            throw new Exception('RowData parameter is required');
+        }
+        
+        // Get form definition to find table view
+        $formSql = "SELECT TableView FROM forms WHERE FormName = ? LIMIT 1";
+        $stmt = $conn->prepare($formSql);
+        if (!$stmt) {
+            throw new Exception('Failed to prepare form query: ' . $conn->error);
+        }
+        
+        $stmt->bind_param("s", $formName);
+        $stmt->execute();
+        $formResult = $stmt->get_result();
+        
+        if ($formResult->num_rows === 0) {
+            $stmt->close();
+            throw new Exception('Form not found: ' . $formName);
+        }
+        
+        $form = $formResult->fetch_assoc();
+        $stmt->close();
+        
+        $tableView = $form['TableView'];
+        
+        // Get field configurations to determine which fields to update
+        $fieldsSql = "SELECT field_name, field_type 
+                      FROM data_config 
+                      WHERE table_name = ? 
+                      ORDER BY id";
+        
+        $stmt = $conn->prepare($fieldsSql);
+        if (!$stmt) {
+            throw new Exception('Failed to prepare fields query: ' . $conn->error);
+        }
+        
+        $stmt->bind_param("s", $tableView);
+        $stmt->execute();
+        $fieldsResult = $stmt->get_result();
+        
+        $fieldNames = [];
+        $comboboxFields = []; // Store combobox field configurations
+        while ($row = $fieldsResult->fetch_assoc()) {
+            $fieldNames[] = $row['field_name'];
+            // Store combobox fields - lookup table name is the same as field name
+            if ($row['field_type'] === 'combobox') {
+                $comboboxFields[$row['field_name']] = [
+                    'field_name' => $row['field_name'],
+                    'lookup_table' => $row['field_name'] // e.g., 'job' field uses 'job' table
+                ];
+            }
+        }
+        $stmt->close();
+        
+        // Find primary key column (for WHERE clause)
+        $primaryKeySql = "SELECT field_name FROM data_config WHERE table_name = ? AND field_type = 'primary' LIMIT 1";
+        $stmt = $conn->prepare($primaryKeySql);
+        if (!$stmt) {
+            throw new Exception('Failed to prepare primary key query: ' . $conn->error);
+        }
+        
+        $stmt->bind_param("s", $tableView);
+        $stmt->execute();
+        $pkResult = $stmt->get_result();
+        $primaryKey = 'id'; // Default
+        if ($pkResult->num_rows > 0) {
+            $pkRow = $pkResult->fetch_assoc();
+            $primaryKey = $pkRow['field_name'];
+        }
+        $stmt->close();
+        
+        // Get primary key value from original row data
+        $primaryKeyValue = $originalRowData[$primaryKey] ?? null;
+        if (!$primaryKeyValue) {
+            throw new Exception('Primary key value not found in original row data');
+        }
+        
+        // Build UPDATE query
+        $setClauses = [];
+        $params = [];
+        $types = '';
+        
+        foreach ($fieldNames as $fieldName) {
+            // Skip primary key and active field (don't update active in edit)
+            if ($fieldName === $primaryKey || $fieldName === 'active') {
+                continue;
+            }
+            
+            if (isset($rowData[$fieldName])) {
+                $setClauses[] = "`$fieldName` = ?";
+                $value = $rowData[$fieldName];
+                
+                // Handle combobox fields - need to get ID from lookup table
+                if (isset($comboboxFields[$fieldName]) && $value !== '' && $value !== null) {
+                    $lookupTableName = $comboboxFields[$fieldName]['lookup_table'];
+                    $lookupColumnName = 'name'; // Default column name for lookup tables
+                    
+                    if ($lookupTableName) {
+                        // Check if value exists in lookup table
+                        $checkSql = "SELECT id FROM `$lookupTableName` WHERE `$lookupColumnName` = ? LIMIT 1";
+                        $checkStmt = $conn->prepare($checkSql);
+                        if ($checkStmt) {
+                            $checkStmt->bind_param("s", $value);
+                            $checkStmt->execute();
+                            $checkResult = $checkStmt->get_result();
+                            
+                            if ($checkResult->num_rows > 0) {
+                                // Value exists, get the ID
+                                $existingRow = $checkResult->fetch_assoc();
+                                $value = $existingRow['id'];
+                            } else {
+                                // Value doesn't exist, insert it and get the new ID
+                                $insertLookupSql = "INSERT INTO `$lookupTableName` (`$lookupColumnName`) VALUES (?)";
+                                $insertStmt = $conn->prepare($insertLookupSql);
+                                if ($insertStmt) {
+                                    $insertStmt->bind_param("s", $value);
+                                    if ($insertStmt->execute()) {
+                                        $value = $conn->insert_id;
+                                    } else {
+                                        throw new Exception('Failed to insert new lookup value: ' . $insertStmt->error);
+                                    }
+                                    $insertStmt->close();
+                                } else {
+                                    throw new Exception('Failed to prepare lookup insert query: ' . $conn->error);
+                                }
+                            }
+                            $checkStmt->close();
+                        }
+                    }
+                }
+                
+                if ($value === '' || $value === null) {
+                    $params[] = null;
+                    $types .= "s"; // Use string type but pass NULL
+                } else {
+                    $params[] = $value;
+                    $types .= "s"; // Assume string type for all fields
+                }
+            }
+        }
+        
+        if (empty($setClauses)) {
+            throw new Exception('No fields to update');
+        }
+        
+        // Add primary key value to params for WHERE clause
+        $params[] = $primaryKeyValue;
+        $types .= "s"; // Primary key type (assuming string, adjust if needed)
+        
+        $setClausesStr = implode(', ', $setClauses);
+        $updateSql = "UPDATE `$tableView` SET $setClausesStr WHERE `$primaryKey` = ?";
+        
+        $stmt = $conn->prepare($updateSql);
+        if (!$stmt) {
+            throw new Exception('Failed to prepare update query: ' . $conn->error);
+        }
+        
+        // Handle NULL values properly
+        $refs = [];
+        foreach ($params as $key => $value) {
+            $refs[$key] = &$params[$key];
+        }
+        
+        // Use call_user_func_array for proper NULL handling
+        if (!call_user_func_array([$stmt, 'bind_param'], array_merge([$types], $refs))) {
+            throw new Exception('Failed to bind parameters: ' . $stmt->error);
+        }
+        
+        // Execute update
+        if ($stmt->execute()) {
+            $affectedRows = $stmt->affected_rows;
+            $stmt->close();
+            
+            echo json_encode([
+                'status' => 'success',
+                'message' => 'Row updated successfully',
+                'affectedRows' => $affectedRows
+            ]);
+        } else {
+            throw new Exception('Failed to execute update query: ' . $stmt->error);
         }
         
     } catch (Exception $e) {

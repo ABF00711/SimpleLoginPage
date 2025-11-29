@@ -101,9 +101,12 @@
                 hover: true,
                 selectable: true,
                 onEdit: (rowIndex, rowData) => {
-                    // Handle edit action
-                    // TODO: Implement edit functionality (e.g., open edit modal)
-                    alert('Edit functionality: Row ' + rowIndex + '\nData: ' + JSON.stringify(rowData, null, 2));
+                    // Show edit modal with existing row data
+                    if (customersTable.addModal) {
+                        customersTable.addModal.show(rowData, rowIndex);
+                    } else {
+                        console.error('Add modal is not available');
+                    }
                 },
                 onAdd: () => {
                     // Show add modal
@@ -225,6 +228,60 @@
                 } catch (error) {
                     console.error('Error adding row:', error);
                     alert('Failed to add row: ' + error.message);
+                }
+            });
+            
+            // Listen for edit submit event
+            customersTable.container.addEventListener('tableEditSubmit', async (e) => {
+                const { rowData, fileFields, rowIndex, originalRowData } = e.detail;
+                
+                try {
+                    // Call update API
+                    const response = await fetch('./backend/table-data.php', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            action: 'update',
+                            formName: currentFormName,
+                            rowData: rowData,
+                            rowIndex: rowIndex,
+                            originalRowData: originalRowData,
+                            fileFields: fileFields
+                        })
+                    });
+                    
+                    if (!response.ok) {
+                        const errorText = await response.text();
+                        throw new Error(`HTTP error! status: ${response.status}, body: ${errorText}`);
+                    }
+                    
+                    const result = await response.json();
+                    
+                    if (result.status === 'success') {
+                        // Reload table data
+                        const dataResponse = await fetch(`./backend/table-data.php?formName=${encodeURIComponent(currentFormName)}`);
+                        if (!dataResponse.ok) {
+                            throw new Error(`HTTP error! status: ${dataResponse.status}`);
+                        }
+                        
+                        const dataResult = await dataResponse.json();
+                        if (dataResult.status === 'error') {
+                            throw new Error(dataResult.message);
+                        }
+                        
+                        // Update table data
+                        customersTable.updateData(dataResult.data);
+                        customersTable.render();
+                        
+                        alert('Successfully updated row');
+                    } else {
+                        throw new Error(result.message || 'Update failed');
+                    }
+                } catch (error) {
+                    console.error('Error updating row:', error);
+                    alert('Failed to update row: ' + error.message);
                 }
             });
         } catch (error) {
