@@ -1102,3 +1102,6 @@
     background: #357abd;
 }
 
+.smart-hidden{
+    display: block !important;
+}
