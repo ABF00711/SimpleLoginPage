@@ -56,6 +56,14 @@ $pageScripts = $pageScripts ?? [];
 
   <?php include __DIR__ . '/header.php'; ?>
 
+  <!-- Message banner (fetched from message table) -->
+  <div id="message-banner" class="message-banner" style="display: none;">
+    <div class="message-banner-content">
+      <span class="message-text"></span>
+      <button type="button" class="message-close" aria-label="Close message">&times;</button>
+    </div>
+  </div>
+
   <main class="content">
     <smart-tabs id="tabs" class="demoTabs" reorder close-buttons></smart-tabs>
   </main>
@@ -69,6 +77,7 @@ $pageScripts = $pageScripts ?? [];
   <script src="./frontend/assets/js/router.js"></script>
   <script src="./frontend/assets/js/tabManager.js"></script>
   <script src="./frontend/assets/js/menu.js"></script>
+  <script src="./frontend/assets/js/message.js"></script>
   
   <?php foreach ($pageScripts as $script): ?>
   <?php if (strpos($script, 'libs/') === 0 || strpos($script, '/') === 0): ?>
