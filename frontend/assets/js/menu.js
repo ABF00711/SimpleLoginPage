@@ -177,6 +177,5 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
     }
     
-    console.log('Menu.js: All menu items added successfully');
   });
 });

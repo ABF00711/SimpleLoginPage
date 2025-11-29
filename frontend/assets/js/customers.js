@@ -65,7 +65,6 @@
             
             // Check if already initialized
             if (container.querySelector('.table-module')) {
-                console.log('Customers table already initialized');
                 return;
             }
 
@@ -103,7 +102,6 @@
                 selectable: true,
                 onEdit: (rowIndex, rowData) => {
                     // Handle edit action
-                    console.log('Edit row:', rowIndex, rowData);
                     // TODO: Implement edit functionality (e.g., open edit modal)
                     alert('Edit functionality: Row ' + rowIndex + '\nData: ' + JSON.stringify(rowData, null, 2));
                 },

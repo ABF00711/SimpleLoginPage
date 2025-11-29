@@ -213,10 +213,6 @@ class TabManager {
 
             this.tabMap.set(pageName, tabData);
             
-            // Log for debugging
-            if (pageName === 'customers' && data.scripts) {
-                console.log(`Saved ${data.scripts.length} scripts for customers tab:`, data.scripts);
-            }
 
             // Inject modals into the tab content container
             if (data.modals) {
@@ -226,9 +222,17 @@ class TabManager {
             // Select the new tab
             this.tabs.select(insertIndex);
 
-            // Load page-specific styles
+            // Load page-specific styles and WAIT for them to load
             if (data.styles && data.styles.length > 0) {
-                this.loadTabStyles(insertIndex, data.styles);
+                await this.loadTabStyles(insertIndex, data.styles);
+                
+                // Additional delay and reflow to ensure styles are applied
+                await new Promise(resolve => setTimeout(resolve, 100));
+                const tabContent = this.tabs.querySelectorAll('smart-tab-item')[insertIndex];
+                if (tabContent) {
+                    void tabContent.offsetHeight;
+                    void document.body.offsetHeight;
+                }
             }
 
             // Load page-specific scripts and wait for them (ensures TableModule is ready)
@@ -302,27 +306,81 @@ class TabManager {
         const oldStyles = document.querySelectorAll(`link[data-tab-index="${tabIndex}"]`);
         oldStyles.forEach(style => style.remove());
 
-        // Load new styles
-        stylePaths.forEach(stylePath => {
-            // Check if this style is already loaded globally (avoid duplicates)
-            const existingStyle = document.querySelector(`link[href*="${stylePath}"]`);
-            if (existingStyle && !existingStyle.hasAttribute('data-tab-index')) {
-                // Style is already loaded globally, skip it
-                return;
-            }
+        if (!stylePaths || stylePaths.length === 0) {
+            return Promise.resolve();
+        }
 
-            const link = document.createElement('link');
-            link.rel = 'stylesheet';
-            // Handle absolute paths (starting with libs/ or /)
-            if (stylePath.startsWith('libs/') || stylePath.startsWith('/')) {
-                link.href = `./frontend/${stylePath}`;
-            } else {
-                link.href = `./frontend/assets/css/${stylePath}`;
-            }
-            link.setAttribute('data-tab-index', tabIndex);
-            link.setAttribute('data-page-style', 'true');
-            document.head.appendChild(link);
+        // Load new styles and wait for them to load
+        const stylePromises = stylePaths.map(stylePath => {
+            return new Promise((resolve, reject) => {
+                // Build the full href to check
+                let fullHref = '';
+                if (stylePath.startsWith('libs/') || stylePath.startsWith('/')) {
+                    fullHref = `./frontend/${stylePath}`;
+                } else {
+                    fullHref = `./frontend/assets/css/${stylePath}`;
+                }
+                
+                // Check if this exact style is already loaded (by href, not just containing)
+                const existingStyle = document.querySelector(`link[href="${fullHref}"]`);
+                if (existingStyle) {
+                    // Style is already loaded, but ensure it has the data-tab-index
+                    if (!existingStyle.hasAttribute('data-tab-index')) {
+                        // Add the attribute to track it
+                        existingStyle.setAttribute('data-tab-index', tabIndex);
+                        existingStyle.setAttribute('data-page-style', 'true');
+                    }
+                    // Force a reflow to ensure styles are applied
+                    void existingStyle.offsetHeight;
+                    resolve();
+                    return;
+                }
+
+                const link = document.createElement('link');
+                link.rel = 'stylesheet';
+                // Handle absolute paths (starting with libs/ or /)
+                if (stylePath.startsWith('libs/') || stylePath.startsWith('/')) {
+                    link.href = `./frontend/${stylePath}`;
+                } else {
+                    link.href = `./frontend/assets/css/${stylePath}`;
+                }
+                link.setAttribute('data-tab-index', tabIndex);
+                link.setAttribute('data-page-style', 'true');
+                
+                // Wait for style to load
+                link.onload = () => {
+                    // Force multiple reflows to ensure styles are applied
+                    void link.offsetHeight;
+                    void document.body.offsetHeight;
+                    // Small delay to ensure browser applies styles
+                    setTimeout(() => {
+                        void link.offsetHeight;
+                        resolve();
+                    }, 50);
+                };
+                link.onerror = () => {
+                    console.error(`Failed to load stylesheet: ${link.href}`);
+                    resolve(); // Resolve anyway to not block other styles
+                };
+                
+                document.head.appendChild(link);
+                
+                // Force a reflow immediately after appending
+                void link.offsetHeight;
+                void document.body.offsetHeight;
+                
+                // Fallback: resolve after a longer timeout if onload doesn't fire
+                // (some browsers don't fire onload for cached stylesheets)
+                setTimeout(() => {
+                    // Force reflow again before resolving
+                    void link.offsetHeight;
+                    void document.body.offsetHeight;
+                    resolve();
+                }, 300);
+            });
         });
+
+        return Promise.all(stylePromises);
     }
 
     /**
@@ -353,11 +411,6 @@ class TabManager {
                     script.setAttribute('data-tab-index', tabIndex);
                     script.setAttribute('data-page-script', 'true');
                     
-                    // Log script loading (for debugging)
-                    if (scriptPath.includes('table-module.js')) {
-                        console.log(`Loading table-module.js from: ${script.src}`);
-                    }
-                    
                     // Wait for script to load AND execute
                     script.addEventListener('load', () => {
                         // For table-module.js, verify TableModule is actually available
@@ -367,7 +420,6 @@ class TabManager {
                             setTimeout(() => {
                                 // Check if TableModule is available (check window.TableModule specifically)
                                 if (typeof window.TableModule !== 'undefined') {
-                                    console.log('✓ TableModule loaded successfully');
                                     resolve();
                                 } else {
                                     // If not available, wait a bit more (script might still be executing)
@@ -377,7 +429,6 @@ class TabManager {
                                         checkCount++;
                                         if (typeof window.TableModule !== 'undefined') {
                                             clearInterval(checkInterval);
-                                            console.log('✓ TableModule loaded after polling');
                                             resolve();
                                         } else if (checkCount >= maxChecks) {
                                             clearInterval(checkInterval);
@@ -651,7 +702,8 @@ class TabManager {
                         label: tabData.label,
                         content: tabData.content || '',
                         modals: tabData.modals || '',
-                        scripts: tabData.scripts || []
+                        scripts: tabData.scripts || [],
+                        styles: tabData.styles || []
                     });
 
                     // Inject modals (with delay)
@@ -661,22 +713,27 @@ class TabManager {
                         }, 150);
                     }
 
-                    // Load styles
+                    // Load styles and WAIT for them to load (ensures CSS is applied)
                     if (tabData.styles && tabData.styles.length > 0) {
-                        this.loadTabStyles(insertIndex, tabData.styles);
+                        await this.loadTabStyles(insertIndex, tabData.styles);
+                        
+                        // Additional delay and reflow to ensure styles are applied
+                        await new Promise(resolve => setTimeout(resolve, 100));
+                        const tabContent = this.tabs.querySelectorAll('smart-tab-item')[insertIndex];
+                        if (tabContent) {
+                            void tabContent.offsetHeight;
+                            void document.body.offsetHeight;
+                        }
                     }
 
                     // Load scripts and WAIT for them to finish (critical for TableModule)
                     if (tabData.scripts && tabData.scripts.length > 0) {
-                        console.log(`Loading ${tabData.scripts.length} scripts for ${tabData.pageName}:`, tabData.scripts);
                         try {
                             await this.loadTabScripts(insertIndex, tabData.scripts);
-                            console.log(`✓ All scripts loaded for ${tabData.pageName}`);
                             
                             // Verify TableModule is available before initializing
                             if (tabData.pageName === 'customers') {
                                 if (typeof window.TableModule !== 'undefined') {
-                                    console.log('✓ TableModule verified before initialization');
                                     if (typeof window.initCustomersTable === 'function') {
                                         window.initCustomersTable();
                                     } else {
