@@ -617,10 +617,7 @@
 
 .hidden-columns-dropdown {
     display: none;
-    position: absolute;
-    top: 100%;
-    left: 0;
-    margin-top: 0.25rem;
+    position: fixed; /* Changed from absolute to fixed for dynamic positioning */
     background-color: #ffffff;
     border: 1px solid #e0e0e0;
     border-radius: 4px;
@@ -628,7 +625,7 @@
     min-width: 200px;
     max-height: 300px;
     overflow-y: auto;
-    z-index: 1000;
+    z-index: 10004; /* Higher than pattern modals */
 }
 
 .hidden-columns-dropdown.show {

@@ -110,10 +110,16 @@ class Reorderer {
             document.body.style.userSelect = '';
             
             // Calculate new order based on current position
+            // Only consider data column headers (exclude checkbox and action columns)
+            const dataHeaders = headers.filter(header => {
+                const colIndex = header.getAttribute('data-column');
+                return colIndex !== null && !header.classList.contains('table-checkbox-header') && !header.classList.contains('table-action-header');
+            });
+            
             if (dragDisplayIndex !== null && this.currentDragX) {
                 let targetDisplayIndex = null;
                 
-                headers.forEach((header, idx) => {
+                dataHeaders.forEach((header, idx) => {
                     const rect = header.getBoundingClientRect();
                     if (this.currentDragX >= rect.left && this.currentDragX <= rect.right) {
                         const headerCenter = rect.left + rect.width / 2;
@@ -135,48 +141,78 @@ class Reorderer {
     }
 
     reorderColumn(fromIndex, toIndex) {
-        const visibleColumns = this.table.columnManager.getVisibleColumns(
+        // Initialize columnOrder if needed
+        if (this.table.columnOrder.length === 0 || this.table.columnOrder.length !== this.table.options.columns.length) {
+            this.table.columnOrder = this.table.options.columns.map((col, idx) => idx);
+        }
+        
+        // Get ordered columns (including hidden ones) to maintain full order
+        const orderedColumns = this.table.columnManager.getOrderedColumns(
             this.table.options.columns,
             this.table.columnOrder
         );
+        
+        // Get visible columns for index mapping
+        const visibleColumns = orderedColumns.filter(col => col.visible !== false);
         
         if (fromIndex === toIndex || fromIndex < 0 || toIndex < 0 || 
             fromIndex >= visibleColumns.length || toIndex >= visibleColumns.length) {
             return;
         }
         
-        // Get original indices
+        // Get the original index of the column being moved
         const fromOriginalIndex = visibleColumns[fromIndex].originalIndex;
-        const toOriginalIndex = visibleColumns[toIndex].originalIndex;
         
-        // If we don't have a saved order yet, initialize it
-        if (this.table.columnOrder.length === 0) {
-            this.table.columnOrder = this.table.options.columns.map((col, idx) => idx);
+        // Find the position of the source column in the ordered list
+        const fromPosInOrdered = orderedColumns.findIndex(col => col.originalIndex === fromOriginalIndex);
+        if (fromPosInOrdered === -1) {
+            return; // Column not found
         }
         
-        // Find positions in columnOrder array
-        const fromPos = this.table.columnOrder.indexOf(fromOriginalIndex);
-        const toPos = this.table.columnOrder.indexOf(toOriginalIndex);
-        
-        if (fromPos !== -1 && toPos !== -1) {
-            // Remove from old position
-            this.table.columnOrder.splice(fromPos, 1);
-            // Insert at new position
-            this.table.columnOrder.splice(toPos, 0, fromOriginalIndex);
-            
-            this.table.stateManager.saveLayoutState(
-                this.table.columnWidths,
-                this.table.columnOrder,
-                this.table.columnVisibility
-            );
-            this.table.stateManager.saveSearchPatternState(
-                this.table.sorter.sortColumn,
-                this.table.sorter.sortDirection,
-                this.table.searchValues,
-                this.table.filterOperations
-            );
-            this.table.render();
+        // Determine target position in the ordered list
+        let targetPosInOrdered = -1;
+        if (toIndex === 0) {
+            // Moving to first visible position - insert before first visible column
+            const firstVisible = visibleColumns[0];
+            targetPosInOrdered = orderedColumns.findIndex(col => col.originalIndex === firstVisible.originalIndex);
+        } else if (toIndex >= visibleColumns.length) {
+            // Moving to last visible position - insert after last visible column
+            const lastVisible = visibleColumns[visibleColumns.length - 1];
+            const lastVisiblePos = orderedColumns.findIndex(col => col.originalIndex === lastVisible.originalIndex);
+            targetPosInOrdered = lastVisiblePos + 1;
+        } else {
+            // Moving between two visible columns - insert before the target visible column
+            const targetVisibleColumn = visibleColumns[toIndex];
+            targetPosInOrdered = orderedColumns.findIndex(col => col.originalIndex === targetVisibleColumn.originalIndex);
         }
+        
+        if (targetPosInOrdered === -1) {
+            return; // Target position not found
+        }
+        
+        // Update columnOrder array
+        // Remove from old position
+        this.table.columnOrder.splice(fromPosInOrdered, 1);
+        
+        // Adjust target position if we removed before the target
+        const adjustedTargetPos = fromPosInOrdered < targetPosInOrdered ? targetPosInOrdered - 1 : targetPosInOrdered;
+        
+        // Insert at new position
+        this.table.columnOrder.splice(adjustedTargetPos, 0, fromOriginalIndex);
+        
+        // Save state and re-render
+        this.table.stateManager.saveLayoutState(
+            this.table.columnWidths,
+            this.table.columnOrder,
+            this.table.columnVisibility
+        );
+        this.table.stateManager.saveSearchPatternState(
+            this.table.sorter.sortColumn,
+            this.table.sorter.sortDirection,
+            this.table.searchValues,
+            this.table.filterOperations
+        );
+        this.table.render();
     }
 }
 

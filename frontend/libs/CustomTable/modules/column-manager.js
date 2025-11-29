@@ -41,10 +41,24 @@ class ColumnManager {
     }
 
     getOrderedColumns(columns, columnOrder) {
-        // If we have saved order, use it; otherwise use original order
+        // If we have saved order and it matches the number of columns, use it
         if (columnOrder.length > 0 && columnOrder.length === columns.length) {
-            return columnOrder.map(idx => columns[idx]).filter(col => col);
+            // Map indices to columns, preserving order
+            const ordered = [];
+            columnOrder.forEach(idx => {
+                if (idx >= 0 && idx < columns.length && columns[idx]) {
+                    ordered.push(columns[idx]);
+                }
+            });
+            // Add any columns that weren't in the order (in case columns were added)
+            columns.forEach((col, idx) => {
+                if (!columnOrder.includes(idx)) {
+                    ordered.push(col);
+                }
+            });
+            return ordered;
         }
+        // Otherwise return columns in original order
         return columns;
     }
 

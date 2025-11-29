@@ -42,8 +42,10 @@ class VisibilityManager {
         if (wasOpen) {
             setTimeout(() => {
                 const newDropdown = this.table.container.querySelector('.hidden-columns-dropdown');
-                if (newDropdown) {
+                const showColumnsBtn = this.table.container.querySelector('.show-columns-btn');
+                if (newDropdown && showColumnsBtn) {
                     newDropdown.classList.add('show');
+                    this.positionDropdown(showColumnsBtn, newDropdown);
                 }
             }, 0);
         }
@@ -78,8 +80,10 @@ class VisibilityManager {
         if (wasOpen) {
             setTimeout(() => {
                 const newDropdown = this.table.container.querySelector('.hidden-columns-dropdown');
-                if (newDropdown) {
+                const showColumnsBtn = this.table.container.querySelector('.show-columns-btn');
+                if (newDropdown && showColumnsBtn) {
                     newDropdown.classList.add('show');
+                    this.positionDropdown(showColumnsBtn, newDropdown);
                 }
             }, 0);
         }
@@ -101,7 +105,13 @@ class VisibilityManager {
                     e.stopPropagation(); // Prevent bubbling to document
                     e.preventDefault();
                 }
+                const isShowing = dropdown.classList.contains('show');
                 dropdown.classList.toggle('show');
+                
+                // Position dropdown below Hide button when showing
+                if (!isShowing) {
+                    this.positionDropdown(newBtn, dropdown);
+                }
             };
 
             // Attach click event to button - MUST stop propagation
@@ -162,6 +172,46 @@ class VisibilityManager {
 
             // Reset button is now handled by event delegation above
         }
+    }
+
+    positionDropdown(button, dropdown) {
+        if (!button || !dropdown) return;
+
+        // Wait for dropdown to be visible to get its dimensions
+        requestAnimationFrame(() => {
+            const buttonRect = button.getBoundingClientRect();
+            const dropdownRect = dropdown.getBoundingClientRect();
+            
+            // Position below button, aligned to left edge
+            let top = buttonRect.bottom + window.scrollY + 5;
+            let left = buttonRect.left + window.scrollX;
+            
+            // Adjust if dropdown goes off-screen to the right
+            if (left + dropdownRect.width > window.innerWidth + window.scrollX) {
+                left = window.innerWidth + window.scrollX - dropdownRect.width - 10;
+            }
+            
+            // Adjust if dropdown goes off-screen to the left
+            if (left < window.scrollX) {
+                left = window.scrollX + 10;
+            }
+            
+            // Adjust if dropdown goes off-screen below
+            if (top + dropdownRect.height > window.innerHeight + window.scrollY) {
+                // Position above button instead
+                top = buttonRect.top + window.scrollY - dropdownRect.height - 5;
+            }
+            
+            // Ensure dropdown doesn't go above viewport
+            if (top < window.scrollY) {
+                top = window.scrollY + 10;
+            }
+            
+            dropdown.style.position = 'fixed';
+            dropdown.style.top = `${top - window.scrollY}px`;
+            dropdown.style.left = `${left - window.scrollX}px`;
+            dropdown.style.zIndex = '10004'; // Higher than pattern modals
+        });
     }
 }
 
