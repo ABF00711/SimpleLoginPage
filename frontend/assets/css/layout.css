@@ -123,3 +123,33 @@ smart-tabs .smart-tabs-content .card {
   margin: 0;
   background: transparent;
 }
+
+.smart-tabs>.smart-container{
+  min-height: initial;
+}
+
+/* Footer styling */
+.app-footer {
+  background-color: #f8f9fa;
+  border-top: 1px solid #e0e0e0;
+  padding: 16px 20px;
+  margin-top: auto;
+  width: 100%;
+  flex-shrink: 0;
+}
+
+.footer-content {
+  max-width: 100%;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.copyright {
+  margin: 0;
+  color: #666;
+  font-size: 13px;
+  font-weight: 400;
+  text-align: center;
+}

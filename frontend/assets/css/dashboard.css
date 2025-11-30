@@ -1,9 +1,15 @@
 /* ===== GENERAL ===== */
-body {
-  background: #f5f6fa;
+html, body {
+  height: 100%;
   margin: 0;
   padding: 0;
+}
+
+body {
+  background: #f5f6fa;
   color: #333;
+  display: flex;
+  flex-direction: column;
 }
 
 /* ===== HEADER ===== */
@@ -258,7 +264,7 @@ smart-menu{
   justify-content: center;
   width: 100%;
   /* height: calc(100vh - 80px); */
-  padding: 50px;
+  padding: 20px 150px;
   margin: 0;
 }
 

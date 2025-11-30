@@ -5,12 +5,13 @@
 
 /* Table Container */
 .table-container {
+    position: relative;
     box-shadow: 0px 0px 3px 1px grey;
     overflow-x: auto;
     overflow-y: auto;
     margin: 1rem 0;
     width: 100%;
-    height: calc(100vh - 350px);
+    height: calc(100vh - 380px)
 }
 
 /* Scrollbar styling for both horizontal and vertical */
@@ -243,7 +244,6 @@
 .hidden-columns-menu {
     position: relative;
     display: inline-block;
-    margin-bottom: 1rem;
 }
 
 .table-action-buttons {

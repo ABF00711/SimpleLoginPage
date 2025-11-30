@@ -68,6 +68,8 @@ $pageScripts = $pageScripts ?? [];
     <smart-tabs id="tabs" class="demoTabs" reorder close-buttons></smart-tabs>
   </main>
 
+  <?php include __DIR__ . '/footer.php'; ?>
+
   <?php
   if (isset($additionalHTML)) {
       echo $additionalHTML;
