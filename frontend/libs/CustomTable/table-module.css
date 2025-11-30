@@ -94,6 +94,8 @@
 .table-module tr {
     display: table-row;
     height: 35px !important;
+    max-height: 35px !important;
+    min-height: 35px !important;
     line-height: 1;
 }
 
@@ -114,6 +116,8 @@
     box-sizing: border-box;
     overflow: hidden;
     height: 35px !important;
+    max-height: 35px !important;
+    min-height: 35px !important;
     line-height: 35px;
     font-size: 14px;
     text-transform: none; /* Preserve original text case */
@@ -250,6 +254,15 @@
     display: inline-flex;
     align-items: center;
     gap: 0.5rem;
+}
+
+.table-action-cell {
+    height: 35px !important;
+    max-height: 35px !important;
+    min-height: 35px !important;
+    line-height: 35px !important;
+    padding: 0 !important;
+    vertical-align: middle !important;
 }
 
 /* Smart UI button styling */
@@ -751,6 +764,8 @@
     text-overflow: ellipsis;
     white-space: nowrap;
     height: 35px !important;
+    max-height: 35px !important;
+    min-height: 35px !important;
     line-height: 35px;
     font-size: 14px;
     text-transform: none; /* Preserve original text case */
@@ -769,11 +784,15 @@
 
 .table-checkbox-cell {
     text-align: center !important;
-    padding: 8px 4px !important;
+    padding: 0 4px !important;
     vertical-align: middle !important;
     width: 50px !important;
     min-width: 50px !important;
     max-width: 50px !important;
+    height: 35px !important;
+    max-height: 35px !important;
+    min-height: 35px !important;
+    line-height: 35px !important;
 }
 
 /* Standard HTML Checkbox Styles */
