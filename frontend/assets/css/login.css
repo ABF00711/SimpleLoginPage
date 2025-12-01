@@ -6,6 +6,34 @@ body {
   min-height: 100vh;
 }
 
+/* Remember Me Checkbox Styling */
+.smart-form-row label[for="remember-me"],
+.smart-form-row label input[type="checkbox"] {
+  cursor: pointer;
+}
+
+.smart-form-row label[for="remember-me"] {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: #333;
+  user-select: none;
+  margin-bottom: 0;
+}
+
+.smart-form-row input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: #0066ff;
+  flex-shrink: 0;
+}
+
+.smart-form-row input[type="checkbox"]:hover {
+  opacity: 0.8;
+}
+
 #loginForm {
   width: 100%;
 }

@@ -1,7 +1,6 @@
 <?php
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
+// Check for remember me cookie and auto-login
+require_once __DIR__ . '/../../backend/check-remember-me.php';
 
 if (!isset($requireAuth) || $requireAuth === true) {
     if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {

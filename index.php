@@ -1,5 +1,6 @@
 <?php
-session_start(); // Start session to check user login state
+// Check for remember me cookie and auto-login
+require_once __DIR__ . '/backend/check-remember-me.php';
 
 // If user is already logged in, redirect to dashboard
 if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
@@ -65,6 +66,14 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
           form-control-name="password"
           required
         ></smart-password-text-box>
+      </div>
+
+      <!-- Remember Me Checkbox -->
+      <div class="smart-form-row">
+        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+          <input type="checkbox" id="remember-me" data-field="remember_me" style="width: auto; cursor: pointer;">
+          <span>Remember me</span>
+        </label>
       </div>
 
       <!-- Error / Status message container -->

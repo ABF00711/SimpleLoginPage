@@ -2,6 +2,7 @@
 header('Content-Type: application/json');
 session_start();
 require_once 'db.php';
+require_once 'remember-me.php';
 
 $raw = file_get_contents('php://input');
 $json = json_decode($raw, true);
@@ -9,6 +10,7 @@ $json = json_decode($raw, true);
 $identifier = $json['identifier'] ?? $_POST['identifier'] ?? $json['username'] ?? $_POST['username'] ?? null;
 $password   = $json['password']   ?? $_POST['password']   ?? null;
 $emailField = $json['email']      ?? $_POST['email']      ?? null;
+$rememberMe = $json['remember_me'] ?? $_POST['remember_me'] ?? false;
 
 if (!$identifier && $emailField) {
     $identifier = $emailField;
@@ -66,6 +68,24 @@ if ($result->num_rows > 0) {
     $_SESSION['user_id']   = $user['id'];
     $_SESSION['username']  = $user['name'];
     $_SESSION['email'] = $user['email'];
+
+    // Handle "Remember Me" functionality
+    if ($rememberMe) {
+        $token = createRememberToken($user['id']);
+        if ($token) {
+            // Set cookie for 30 days
+            // Using httponly and secure flags for security
+            $cookieName = 'remember_me_token';
+            $cookieValue = $token;
+            $expireTime = time() + (30 * 24 * 60 * 60); // 30 days
+            $path = '/';
+            $domain = ''; // Current domain
+            $secure = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on'; // HTTPS only if available
+            $httponly = true; // Prevent JavaScript access
+            
+            setcookie($cookieName, $cookieValue, $expireTime, $path, $domain, $secure, $httponly);
+        }
+    }
 
     echo json_encode(['success' => true]);
 } else {

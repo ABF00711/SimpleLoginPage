@@ -14,7 +14,7 @@ class TableModule {
         // Initialize state manager
         const storageKey = options.storageKey || `table_${containerId}`;
         this.stateManager = new StateManager(storageKey);
-        
+
         // Set table name for database operations (extract from formName or use containerId)
         const tableName = options.tableName || options.formName || containerId.replace('-table', '').replace('table-', '');
         this.stateManager.setTableName(tableName);
@@ -101,7 +101,7 @@ class TableModule {
         }).catch((error) => {
             console.error('Failed to load grid_state:', error);
             // Initialize anyway with default state
-            this.init();
+        this.init();
         });
     }
 

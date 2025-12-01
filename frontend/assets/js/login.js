@@ -16,7 +16,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
     inputs.forEach((input) => {
       const key = input.getAttribute("data-field");
-      payload[key] = input.value ? input.value.trim() : "";
+      // Handle checkbox differently
+      if (input.type === "checkbox") {
+        payload[key] = input.checked ? true : false;
+      } else {
+        payload[key] = input.value ? input.value.trim() : "";
+      }
     });
 
     // Determine login identifier (email or username)
