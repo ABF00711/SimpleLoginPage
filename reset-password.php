@@ -5,16 +5,32 @@ require_once __DIR__ . '/backend/check-remember-me.php';
 // If user is already logged in, redirect to dashboard
 if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
     header("Location: dashboard.php");
-    exit; // Stop script execution after redirect
+    exit;
+}
+
+// Get token from URL
+$token = $_GET['token'] ?? '';
+
+if (empty($token)) {
+    header("Location: forgot-password.php?error=invalid_token");
+    exit;
+}
+
+// Validate token (check if it exists and is not expired)
+require_once __DIR__ . '/backend/password-reset.php';
+$tokenData = validatePasswordResetToken($token);
+
+if (!$tokenData) {
+    header("Location: forgot-password.php?error=expired_token");
+    exit;
 }
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Smart UI Hybrid Login</title>
+  <title>Reset Password - BeornNotes</title>
 
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="./frontend/assets/image/logo.png">
@@ -28,7 +44,7 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
   <!-- Smart UI License and script initialization -->
   <script>
     window.Smart = window.Smart || {};
-    window.Smart.License = "0A2C72B9-D78F-5E17-8D07-0CBC0E1EDC29"; // Smart UI license key
+    window.Smart.License = "0A2C72B9-D78F-5E17-8D07-0CBC0E1EDC29";
   </script>
 
   <!-- Smart UI library -->
@@ -37,43 +53,36 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
 
 <body>
   <div class="login-card">
-    <h2>Login</h2>
+    <h2>Reset Password</h2>
 
-    <!-- Login Form -->
-    <form id="login">
+    <!-- Reset Password Form -->
+    <form id="reset-password-form">
+      <input type="hidden" id="token" value="<?php echo htmlspecialchars($token); ?>">
 
-      <!-- Username Field -->
       <div class="smart-form-row">
-        <label>Username:</label>
-        <smart-input
-          data-field="username"
-          placeholder="Enter username"
-          class="underlined"
-          form-control-name="userName"
-          required
-        ></smart-input>
-      </div>
-
-      <!-- Password Field -->
-      <div class="smart-form-row">
-        <label>Password:</label>
+        <label>New Password:</label>
         <smart-password-text-box
           show-password-icon
           type="password"
           data-field="password"
-          placeholder="Enter password"
+          placeholder="Enter new password"
           class="underlined"
           form-control-name="password"
           required
         ></smart-password-text-box>
       </div>
 
-      <!-- Remember Me Checkbox -->
       <div class="smart-form-row">
-        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
-          <input type="checkbox" id="remember-me" data-field="remember_me" style="width: auto; cursor: pointer;">
-          <span>Remember me</span>
-        </label>
+        <label>Confirm Password:</label>
+        <smart-password-text-box
+          show-password-icon
+          type="password"
+          data-field="confirm_password"
+          placeholder="Confirm new password"
+          class="underlined"
+          form-control-name="confirmPassword"
+          required
+        ></smart-password-text-box>
       </div>
 
       <!-- Error / Status message container -->
@@ -81,21 +90,18 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
         <p id="message"></p>
       </div>
 
-      <!-- Submit Button + Links -->
+      <!-- Submit Button + Back to Login -->
       <div class="smart-form-row submit">
-        <smart-button class="success" type="submit">Login</smart-button>
+        <smart-button class="success" type="submit">Reset Password</smart-button>
         <p>
-          <a href="./forgot-password.php" style="display: block; margin-bottom: 0.5rem; text-align: center;">Forgot password?</a>
-          don't have an account?
-          <a href="./register.php">register</a>
+          <a href="./index.php">Back to login</a>
         </p>
       </div>
-
     </form>
   </div>
 
-  <!-- Login page logic -->
-  <script src="./frontend/assets/js/login.js"></script>
+  <!-- Reset Password page logic -->
+  <script src="./frontend/assets/js/reset-password.js"></script>
 </body>
 </html>
 
