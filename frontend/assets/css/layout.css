@@ -153,3 +153,89 @@ smart-tabs .smart-tabs-content .card {
   font-weight: 400;
   text-align: center;
 }
+
+/* Session Timeout Modal */
+.session-timeout-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 10005;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.session-timeout-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+}
+
+.session-timeout-content {
+  position: relative;
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  min-width: 400px;
+  max-width: 500px;
+  z-index: 10006;
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.session-timeout-header {
+  padding: 20px 24px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.session-timeout-header h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #333;
+}
+
+.session-timeout-body {
+  padding: 24px;
+  color: #666;
+  line-height: 1.6;
+}
+
+.session-timeout-body p {
+  margin: 0 0 12px 0;
+  font-size: 14px;
+}
+
+.session-timeout-body p:last-child {
+  margin-bottom: 0;
+  font-weight: 500;
+  color: #333;
+}
+
+.session-timeout-actions {
+  padding: 16px 24px;
+  border-top: 1px solid #e0e0e0;
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+.session-timeout-actions smart-button {
+  min-width: 120px;
+}

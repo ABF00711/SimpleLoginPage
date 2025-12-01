@@ -79,6 +79,7 @@ $pageScripts = $pageScripts ?? [];
   <script src="./frontend/assets/js/tabManager.js"></script>
   <script src="./frontend/assets/js/menu.js"></script>
   <script src="./frontend/assets/js/message.js"></script>
+  <script src="./frontend/assets/js/session-timeout.js"></script>
   
   <?php foreach ($pageScripts as $script): ?>
   <?php if (strpos($script, 'libs/') === 0 || strpos($script, '/') === 0): ?>
