@@ -51,6 +51,9 @@ class Renderer {
         
         html += '</table>';
         html += '</div>';
+        
+        // Add status bar
+        html += this.renderStatusBar();
 
         this.table.container.innerHTML = html;
 
@@ -58,7 +61,36 @@ class Renderer {
         requestAnimationFrame(() => {
             // Attach event listeners after DOM is ready
             this.attachEventListeners();
+            // Update status bar
+            this.updateStatusBar();
         });
+    }
+
+    renderStatusBar() {
+        return '<div class="table-status-bar" id="table-status-bar-' + this.table.tableId + '"></div>';
+    }
+
+    updateStatusBar() {
+        const statusBar = this.table.container.querySelector('.table-status-bar');
+        if (!statusBar) return;
+
+        // Get displayed rows (filtered data if searchable, otherwise all data)
+        const displayedRows = this.table.options.searchable ? this.table.filteredData : this.table.options.data;
+        const displayedCount = displayedRows.length;
+        
+        // Get total rows (always from originalData)
+        const totalRows = this.table.originalData ? this.table.originalData.length : this.table.options.data.length;
+        
+        // Get selected rows count
+        const selectedCount = this.table.selectedRows ? this.table.selectedRows.size : 0;
+        
+        // Build status text
+        let statusText = `Showing <span class="status-number">${displayedCount}</span> of <span class="status-number">${totalRows}</span> rows`;
+        if (selectedCount > 0) {
+            statusText += ` (<span class="status-number">${selectedCount}</span> selected)`;
+        }
+        
+        statusBar.innerHTML = statusText;
     }
 
     renderHiddenColumnsMenu(allColumns) {
@@ -446,6 +478,8 @@ class Renderer {
                 
                 // Update Delete button state
                 this.updateDeleteButtonState();
+                // Update status bar
+                this.updateStatusBar();
             });
         }
 
@@ -473,6 +507,8 @@ class Renderer {
                     
                     // Update Delete button state
                     this.updateDeleteButtonState();
+                    // Update status bar
+                    this.updateStatusBar();
                 }
             });
         }
@@ -553,6 +589,14 @@ class Renderer {
                 tbody.appendChild(fragment);
             }
         }
+        
+        // Re-attach checkbox listeners after updating rows
+        if (this.table.options.selectable) {
+            this.attachCheckboxListeners();
+        }
+        
+        // Update status bar after data rows update
+        this.updateStatusBar();
     }
 
     attachActionButtons() {

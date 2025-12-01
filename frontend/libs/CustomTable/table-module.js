@@ -220,6 +220,10 @@ class TableModule {
             this.filteredData = [...newData];
         }
         this.render();
+        // Update status bar after render (render already calls it, but ensure it's updated)
+        if (this.renderer) {
+            setTimeout(() => this.renderer.updateStatusBar(), 0);
+        }
         
         // Reapply sort state after render (similar to init method)
         // Sort should be applied regardless of searchable option

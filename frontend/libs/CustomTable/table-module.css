@@ -14,6 +14,24 @@
     height: calc(100vh - 380px)
 }
 
+/* Status Bar */
+.table-status-bar {
+    padding: 8px 16px;
+    background-color: #f8f9fa;
+    border-top: 1px solid #dee2e6;
+    font-size: 13px;
+    color: #666;
+    text-align: left;
+    display: flex;
+    align-items: center;
+    min-height: 32px;
+}
+
+.table-status-bar .status-number {
+    color: #0066ff;
+    font-weight: 500;
+}
+
 /* Scrollbar styling for both horizontal and vertical */
 .table-container::-webkit-scrollbar {
     width: 8px;  /* Width for vertical scrollbar */

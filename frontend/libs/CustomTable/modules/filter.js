@@ -355,6 +355,7 @@ class Filter {
                     this.applyFilters();
                     // Only update data rows, not the entire table (preserves search input focus)
                     this.table.renderer.updateDataRows();
+                    // Update status bar is called in updateDataRows
                 }, 300); // 300ms debounce
             });
         });
