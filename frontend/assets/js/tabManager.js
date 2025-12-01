@@ -242,6 +242,11 @@ class TabManager {
                 // Initialize page-specific code AFTER scripts are loaded
                 if (pageName === 'customers' && typeof window.initCustomersTable === 'function') {
                     window.initCustomersTable();
+                } else if (pageName === 'profile' && typeof window.initProfilePage === 'function') {
+                    // Wait a bit for content to be fully inserted
+                    setTimeout(() => {
+                        window.initProfilePage();
+                    }, 200);
                 }
             }
 
@@ -402,8 +407,24 @@ class TabManager {
             return promise.then(() => {
                 return new Promise((resolve, reject) => {
                     const script = document.createElement('script');
+                    // Handle external URLs (http:// or https://)
+                    if (scriptPath.startsWith('http://') || scriptPath.startsWith('https://')) {
+                        script.src = scriptPath;
+                        script.setAttribute('data-tab-index', tabIndex);
+                        script.setAttribute('data-page-script', 'true');
+                        script.addEventListener('load', () => {
+                            // Give a small delay for external scripts to fully initialize
+                            setTimeout(() => resolve(), 50);
+                        });
+                        script.addEventListener('error', () => {
+                            console.error(`Failed to load external script: ${scriptPath}`);
+                            reject(new Error(`Failed to load script: ${scriptPath}`));
+                        });
+                        document.head.appendChild(script);
+                        return;
+                    }
                     // Handle absolute paths (starting with libs/ or /)
-                    if (scriptPath.startsWith('libs/') || scriptPath.startsWith('/')) {
+                    else if (scriptPath.startsWith('libs/') || scriptPath.startsWith('/')) {
                         script.src = `./frontend/${scriptPath}`;
                     } else {
                         script.src = `./frontend/assets/js/${scriptPath}`;

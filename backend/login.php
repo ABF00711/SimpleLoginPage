@@ -27,6 +27,7 @@ if (!$identifier || !$password) {
 
 $hashed = md5($password);
 
+// Check if mfa column exists, if not, don't select it
 $sql = "SELECT id, name, email 
         FROM users 
         WHERE (name = ? OR email = ?) AND hashedpassword = ? 
@@ -63,6 +64,57 @@ if (!$result) {
 
 if ($result->num_rows > 0) {
     $user = $result->fetch_assoc();
+    
+    // Check if mfa column exists by trying to query it separately
+    $mfaEnabled = false;
+    $checkMfaStmt = $conn->prepare("SELECT mfa FROM users WHERE id = ? LIMIT 1");
+    if ($checkMfaStmt) {
+        $checkMfaStmt->bind_param("i", $user['id']);
+        if ($checkMfaStmt->execute()) {
+            $mfaResult = $checkMfaStmt->get_result();
+            if ($mfaResult && $mfaResult->num_rows > 0) {
+                $mfaRow = $mfaResult->fetch_assoc();
+                $mfaEnabled = isset($mfaRow['mfa']) && $mfaRow['mfa'] == 1;
+            }
+        }
+        $checkMfaStmt->close();
+    }
+    
+    $mfaCode = $json['mfa_code'] ?? $_POST['mfa_code'] ?? null;
+    
+    // If 2FA is enabled, verify code before completing login
+    if ($mfaEnabled) {
+        if (!$mfaCode) {
+            // 2FA required but code not provided
+            echo json_encode([
+                'success' => false,
+                'requires_2fa' => true,
+                'message' => 'Please enter your 2FA code'
+            ]);
+            $stmt->close();
+            $conn->close();
+            exit;
+        }
+        
+        // Verify 2FA code
+        require_once __DIR__ . '/two-factor.php';
+        if (!function_exists('verifyTOTPCodeForUser')) {
+            // If function doesn't exist, include the file
+            require_once __DIR__ . '/two-factor.php';
+        }
+        $isValid = verifyTOTPCodeForUser($user['id'], $mfaCode);
+        
+        if (!$isValid) {
+            echo json_encode([
+                'success' => false,
+                'requires_2fa' => true,
+                'message' => 'Invalid 2FA code'
+            ]);
+            $stmt->close();
+            $conn->close();
+            exit;
+        }
+    }
 
     $_SESSION['loggedin']  = true;
     $_SESSION['user_id']   = $user['id'];
