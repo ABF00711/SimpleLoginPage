@@ -96,26 +96,29 @@
         // Get original data
         const originalData = customers2Table.originalData || customers2Table.options.data || [];
         
-        // Filter data
+        // Filter data - only apply filters if values are provided
         let filteredData = originalData.filter(row => {
-            // Age filter
-            if (age && age !== '') {
+            // Age filter - only apply if age has a value
+            if (age && age !== '' && age !== null && age !== undefined) {
                 const rowAge = row.age || row.Age || '';
                 const ageNum = parseInt(age);
                 const rowAgeNum = parseInt(rowAge);
                 
+                // If age is provided, it must match exactly
                 if (isNaN(ageNum) || isNaN(rowAgeNum) || rowAgeNum !== ageNum) {
                     return false;
                 }
             }
+            // If age is empty, don't filter by age (show all ages)
             
-            // Job filter
-            if (job && job !== '') {
+            // Job filter - only apply if job has a value
+            if (job && job !== '' && job !== null && job !== undefined) {
                 const rowJob = (row.job || row.Job || '').trim();
                 if (rowJob !== job.trim()) {
                     return false;
                 }
             }
+            // If job is empty, don't filter by job (show all jobs)
             
             return true;
         });
@@ -178,12 +181,13 @@
                 }
             }
             
-            // Apply filters if values exist
-            if (savedFilters.age || savedFilters.job) {
-                setTimeout(() => {
-                    applyFilters(savedFilters.age, savedFilters.job);
-                }, 100);
-            }
+            // Apply filters - always apply (even if empty, to show all data)
+            setTimeout(() => {
+                // Convert empty strings to null for filtering
+                const ageFilter = savedFilters.age && savedFilters.age !== '' ? savedFilters.age : null;
+                const jobFilter = savedFilters.job && savedFilters.job !== '' ? savedFilters.job : null;
+                applyFilters(ageFilter, jobFilter);
+            }, 100);
         });
         
         // Handle form submission
@@ -194,12 +198,19 @@
             let age = '';
             let job = '';
             
+            // Get age value - treat empty string as no filter
             if (ageInput.value !== undefined) {
-                age = ageInput.value || '';
+                age = ageInput.value;
             } else if (typeof ageInput.getValue === 'function') {
-                age = ageInput.getValue() || '';
+                age = ageInput.getValue();
             }
             
+            // Normalize age - convert empty string to null for filtering
+            if (age === '' || age === null || age === undefined) {
+                age = null;
+            }
+            
+            // Get job value - treat empty string as no filter
             if (jobDropdown.selectedValues !== undefined) {
                 job = jobDropdown.selectedValues && jobDropdown.selectedValues.length > 0 
                     ? jobDropdown.selectedValues[0] 
@@ -214,10 +225,15 @@
                 }
             }
             
-            // Save to localStorage
-            saveSearchFilters(age, job);
+            // Normalize job - convert empty string to null for filtering
+            if (job === '' || job === null || job === undefined) {
+                job = null;
+            }
             
-            // Apply filters
+            // Save to localStorage (save as empty string for display purposes)
+            saveSearchFilters(age || '', job || '');
+            
+            // Apply filters (pass null for empty values)
             applyFilters(age, job);
         });
     }
