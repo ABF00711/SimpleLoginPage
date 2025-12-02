@@ -71,7 +71,7 @@ class Formatter {
                     
                     return date.toLocaleDateString('en-US', {
                         year: 'numeric',
-                        month: 'short',
+                        month: 'numeric',
                         day: 'numeric'
                     });
                 };
