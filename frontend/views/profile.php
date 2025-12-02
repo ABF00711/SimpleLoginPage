@@ -12,6 +12,83 @@ ob_start();
   <h2>User Profile</h2>
   
   <div class="profile-content">
+    <!-- User Information Section -->
+    <div class="profile-section">
+      <h3>User Information</h3>
+      
+      <form id="user-info-form" class="profile-form">
+        <div class="form-group">
+          <label for="username-input">Username</label>
+          <smart-input 
+            type="text" 
+            id="username-input" 
+            placeholder="Enter username"
+            required>
+          </smart-input>
+        </div>
+        
+        <div class="form-group">
+          <label for="email-input">Email</label>
+          <smart-input 
+            type="email" 
+            id="email-input" 
+            placeholder="Enter email address"
+            required>
+          </smart-input>
+        </div>
+        
+        <div class="form-actions">
+          <smart-button type="submit" class="primary">Update Information</smart-button>
+        </div>
+        
+        <div id="user-info-message" class="profile-message"></div>
+      </form>
+    </div>
+    
+    <!-- Password Change Section -->
+    <div class="profile-section">
+      <h3>Change Password</h3>
+      
+      <form id="password-change-form" class="profile-form">
+        <div class="form-group">
+          <label for="current-password-input">Current Password</label>
+          <smart-input 
+            type="password" 
+            id="current-password-input" 
+            placeholder="Enter current password"
+            required>
+          </smart-input>
+        </div>
+        
+        <div class="form-group">
+          <label for="new-password-input">New Password</label>
+          <smart-input 
+            type="password" 
+            id="new-password-input" 
+            placeholder="Enter new password"
+            required>
+          </smart-input>
+        </div>
+        
+        <div class="form-group">
+          <label for="confirm-password-input">Confirm New Password</label>
+          <smart-input 
+            type="password" 
+            id="confirm-password-input" 
+            placeholder="Confirm new password"
+            required>
+          </smart-input>
+        </div>
+        
+        <div class="form-actions">
+          <smart-button type="submit" class="primary">Change Password</smart-button>
+        </div>
+        
+        <div id="password-change-message" class="profile-message"></div>
+      </form>
+    </div>
+    
+    <!-- 2FA Section -->
     <div class="profile-section">
       <h3>Account Settings</h3>
       

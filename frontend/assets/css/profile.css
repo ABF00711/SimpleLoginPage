@@ -327,3 +327,39 @@
   font-size: 15px;
 }
 
+/* Profile Form Styles */
+.profile-form {
+  background: #f8f9fa;
+  padding: 24px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group label {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  color: #333;
+  margin-bottom: 8px;
+}
+
+.form-group smart-input {
+  width: 100%;
+  display: block;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-start;
+  margin-top: 24px;
+}
+
+.form-actions smart-button {
+  padding: 10px 24px;
+  font-size: 15px;
+}
+

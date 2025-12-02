@@ -219,8 +219,8 @@ smart-menu{
 }
 
 .user-dropdown {
-  min-width: 200px !important;
-  max-width: 250px !important;
+  min-width: 100px !important;
+  max-width: 150px !important;
 }
 
 .dropdown-username {

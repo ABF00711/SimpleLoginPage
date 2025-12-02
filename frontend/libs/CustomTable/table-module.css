@@ -1368,3 +1368,7 @@
     background-color: #bd2130;
     transform: translateY(1px);
 }
+
+smart-drop-down-list{
+    width: 100px;
+}
