@@ -71,15 +71,25 @@ try {
     // Always point to root reset-password.php (not backend/reset-password.php)
     $resetLink = $protocol . '://' . $host . '/reset-password.php?token=' . $token;
     
-    // TODO: Send email with reset link
-    // For now, return the link in development mode
-    // In production, you would send an email here using mail() or a library like PHPMailer
+    // Save reset link to password_reset_url column in users table
+    $updateStmt = $conn->prepare("UPDATE users SET password_reset_url = ? WHERE id = ?");
+    if (!$updateStmt) {
+        throw new Exception('Database error: ' . $conn->error);
+    }
+    
+    $updateStmt->bind_param("si", $resetLink, $user['id']);
+    
+    if (!$updateStmt->execute()) {
+        $updateStmt->close();
+        throw new Exception('Database error: ' . $updateStmt->error);
+    }
+    
+    $updateStmt->close();
     
     ob_end_clean();
     echo json_encode([
         'success' => true,
-        'message' => 'Password reset link has been sent to your email.',
-        'resetLink' => $resetLink // Remove this in production
+        'message' => 'Password reset link has been generated and saved.'
     ]);
     
 } catch (Exception $e) {

@@ -499,14 +499,6 @@
     overflow: visible;
 }
 
-.add-modal-content .smart-form-row{
-    flex-direction: row;
-    justify-content: space-between;
-}
-.add-modal-content .smart-form-row smart-input, smart-date-input, smart-drop-down-list{
-    width: 60%;
-}
-
 .add-row-form {
     display: flex;
     flex-direction: column;

@@ -18,16 +18,13 @@ function createPasswordResetToken($userId) {
     // Generate a secure random token
     $token = bin2hex(random_bytes(32)); // 64 character hex string
     
-    // Set expiration to 1 hour from now (stored in PasswordResetTime)
-    $resetTime = date('Y-m-d H:i:s', strtotime('+1 hour'));
-    
-    // Update user record with token and expiration time
-    $stmt = $conn->prepare("UPDATE users SET PasswordResetToken = ?, PasswordResetTime = ? WHERE id = ?");
+    // Update user record with token (no expiration time)
+    $stmt = $conn->prepare("UPDATE users SET PasswordResetToken = ? WHERE id = ?");
     if (!$stmt) {
         return false;
     }
     
-    $stmt->bind_param("ssi", $token, $resetTime, $userId);
+    $stmt->bind_param("si", $token, $userId);
     
     if ($stmt->execute()) {
         $stmt->close();
@@ -46,12 +43,10 @@ function createPasswordResetToken($userId) {
 function validatePasswordResetToken($token) {
     global $conn;
     
-    // Find user with matching token and check if it's not expired
-    // PasswordResetTime should be in the future (token is still valid)
-    $stmt = $conn->prepare("SELECT id, name, email, PasswordResetToken, PasswordResetTime 
+    // Find user with matching token (no expiration check)
+    $stmt = $conn->prepare("SELECT id, name, email, PasswordResetToken 
                             FROM users 
                             WHERE PasswordResetToken = ? 
-                            AND PasswordResetTime > NOW() 
                             LIMIT 1");
     
     if (!$stmt) {
@@ -85,8 +80,8 @@ function validatePasswordResetToken($token) {
 function deletePasswordResetToken($token) {
     global $conn;
     
-    // Clear the token and reset time for the user
-    $stmt = $conn->prepare("UPDATE users SET PasswordResetToken = NULL, PasswordResetTime = NULL WHERE PasswordResetToken = ?");
+    // Clear the token for the user
+    $stmt = $conn->prepare("UPDATE users SET PasswordResetToken = NULL WHERE PasswordResetToken = ?");
     if (!$stmt) {
         return false;
     }
@@ -106,8 +101,8 @@ function deletePasswordResetToken($token) {
 function deleteUserPasswordResetTokens($userId) {
     global $conn;
     
-    // Clear the token and reset time for the user
-    $stmt = $conn->prepare("UPDATE users SET PasswordResetToken = NULL, PasswordResetTime = NULL WHERE id = ?");
+    // Clear the token for the user
+    $stmt = $conn->prepare("UPDATE users SET PasswordResetToken = NULL WHERE id = ?");
     if (!$stmt) {
         return false;
     }

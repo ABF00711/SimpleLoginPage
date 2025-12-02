@@ -29,18 +29,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
       if (result.success) {
         message.style.color = "green";
-        if (result.resetLink) {
-          // For development: show the reset link
-          message.innerHTML = `Password reset link sent!<br><br>
-            <strong>Development Mode:</strong><br>
-            <a href="${result.resetLink}" target="_blank" style="color: #0066ff; word-break: break-all;">${result.resetLink}</a><br><br>
-            In production, this link would be sent to your email.`;
-        } else {
-          message.textContent = result.message || "Password reset link sent! Please check your email.";
-        }
+        message.textContent = result.message || "Password reset link has been generated and saved.";
       } else {
         message.style.color = "red";
-        message.textContent = result.message || "Failed to send reset link. Please try again.";
+        message.textContent = result.message || "Failed to generate reset link. Please try again.";
       }
     } catch (err) {
       console.error(err);
