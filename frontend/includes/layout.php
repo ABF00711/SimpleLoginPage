@@ -59,7 +59,6 @@ $pageScripts = $pageScripts ?? [];
   <div id="message-banner" class="message-banner" style="display: none;">
     <div class="message-banner-content">
       <span class="message-text"></span>
-      <button type="button" class="message-close" aria-label="Close message">&times;</button>
     </div>
   </div>
 
