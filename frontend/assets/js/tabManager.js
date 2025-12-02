@@ -242,6 +242,8 @@ class TabManager {
                 // Initialize page-specific code AFTER scripts are loaded
                 if (pageName === 'customers' && typeof window.initCustomersTable === 'function') {
                     window.initCustomersTable();
+                } else if (pageName === 'customers2' && typeof window.initCustomers2Table === 'function') {
+                    window.initCustomers2Table();
                 } else if (pageName === 'profile' && typeof window.initProfilePage === 'function') {
                     // Wait a bit for content to be fully inserted
                     setTimeout(() => {
@@ -759,6 +761,17 @@ class TabManager {
                                         window.initCustomersTable();
                                     } else {
                                         console.error('✗ initCustomersTable function not found');
+                                    }
+                                } else {
+                                    console.error('✗ TableModule not available after scripts loaded');
+                                    console.error('Available on window:', Object.keys(window).filter(k => k.includes('Table')));
+                                }
+                            } else if (tabData.pageName === 'customers2') {
+                                if (typeof window.TableModule !== 'undefined') {
+                                    if (typeof window.initCustomers2Table === 'function') {
+                                        window.initCustomers2Table();
+                                    } else {
+                                        console.error('✗ initCustomers2Table function not found');
                                     }
                                 } else {
                                     console.error('✗ TableModule not available after scripts loaded');

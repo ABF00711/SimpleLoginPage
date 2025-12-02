@@ -1,0 +1,62 @@
+/* Customers2 Page Styles */
+
+.customers2-search-form {
+    display: flex;
+    width: 500px;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0px 50px;
+}
+
+.search-fields {
+    display: flex;
+    flex-direction: column;
+    max-width: 280px;
+}
+
+.search-field {
+    width: 250px;
+    display: flex;
+    margin-bottom: 10px;
+    justify-content: space-between;
+}
+
+.search-field label {
+    font-size: 14px;
+    font-weight: 500;
+    color: #333;
+}
+
+.search-field smart-input,
+.search-field smart-drop-down-list {
+    width: 180px;
+}
+
+.search-actions {
+    display: flex;
+    padding-left: 30px;
+}
+
+.search-actions smart-button {
+    padding: 5px 5px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .search-fields {
+        flex-direction: column;
+    }
+    
+    .search-field {
+        min-width: 100%;
+    }
+    
+    .search-actions {
+        width: 100%;
+    }
+    
+    .search-actions smart-button {
+        width: 100%;
+    }
+}
+
