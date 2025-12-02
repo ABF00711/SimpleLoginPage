@@ -292,7 +292,6 @@ class AddModal {
             // Set the value using Smart UI's setValue method
             if (dateValue && typeof dateInput.setValue === 'function') {
                 try {
-                    console.log("dateValue: ", dateValue);
                     dateInput.setDate(dateValue);
                 } catch (error) {
                     console.error('Error setting date value:', error);
