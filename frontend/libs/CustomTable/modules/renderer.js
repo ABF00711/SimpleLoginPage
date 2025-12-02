@@ -85,7 +85,7 @@ class Renderer {
         const selectedCount = this.table.selectedRows ? this.table.selectedRows.size : 0;
         
         // Build status text
-        let statusText = `Showing <span class="status-number">${displayedCount}</span> of <span class="status-number">${totalRows}</span> rows`;
+        let statusText = `Showing <span class="status-number">&nbsp${displayedCount}&nbsp</span> of <span class="status-number">&nbsp${totalRows}&nbsp</span> rows`;
         if (selectedCount > 0) {
             statusText += ` (<span class="status-number">${selectedCount}</span> selected)`;
         }
