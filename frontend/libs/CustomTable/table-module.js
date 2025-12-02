@@ -74,6 +74,13 @@ class TableModule {
         this.visibilityManager = new VisibilityManager(this);
         this.renderer = new Renderer(this);
         
+        // Initialize column menu
+        this.columnMenu = new ColumnMenu(this);
+        
+        // Initialize column filter state
+        this.columnFilters = {}; // Store selected filter values per column
+        this.columnFilterSearch = {}; // Store search terms for filter dropdowns
+        
         // Set table instance reference for auto-save (after all modules are initialized)
         this.stateManager.setTableInstance(this);
 

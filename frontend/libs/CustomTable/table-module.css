@@ -262,6 +262,214 @@
     align-items: center;
 }
 
+/* Column Menu Button */
+.column-menu-btn-trigger {
+    background: none;
+    border: none;
+    color: #ffffff;
+    font-size: 16px;
+    cursor: pointer;
+    padding: 2px 6px;
+    margin-left: 4px;
+    border-radius: 3px;
+    transition: background-color 0.2s ease;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.column-menu-btn-trigger:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Column Menu Container */
+.column-menu-container {
+    position: fixed;
+    z-index: 10000;
+}
+
+.column-menu {
+    background: #ffffff;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    min-width: 280px;
+    max-width: 320px;
+    max-height: 500px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+/* Column Menu Sort Section */
+.column-menu-sort {
+    padding: 8px 0;
+}
+
+.column-menu-sort-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    font-size: 14px;
+    color: #333;
+}
+
+.column-menu-sort-option:hover {
+    background-color: #f5f5f5;
+}
+
+.column-menu-sort-option.active {
+    background-color: #e3f2fd;
+    color: #1976d2;
+    font-weight: 500;
+}
+
+.column-menu-sort-option .sort-icon {
+    font-size: 12px;
+    width: 16px;
+    text-align: center;
+}
+
+/* Column Menu Divider */
+.column-menu-divider {
+    height: 1px;
+    background-color: #e0e0e0;
+    margin: 4px 0;
+}
+
+/* Column Menu Filter Section */
+.column-menu-filter {
+    padding: 8px 0;
+    display: flex;
+    flex-direction: column;
+    max-height: 300px;
+}
+
+.column-menu-filter-label {
+    padding: 8px 16px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #666;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.column-menu-search {
+    margin: 0 12px 8px 12px;
+    padding: 6px 10px;
+    border: 1px solid #e0e0e0;
+    border-radius: 3px;
+    font-size: 13px;
+    outline: none;
+    transition: border-color 0.2s ease;
+}
+
+.column-menu-search:focus {
+    border-color: #0070ff;
+}
+
+.column-menu-checkboxes {
+    overflow-y: auto;
+    max-height: 200px;
+    padding: 0 8px;
+}
+
+.column-menu-checkbox-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    cursor: pointer;
+    font-size: 13px;
+    color: #333;
+    transition: background-color 0.2s ease;
+    user-select: none;
+}
+
+.column-menu-checkbox-item:hover {
+    background-color: #f5f5f5;
+}
+
+.column-menu-checkbox {
+    cursor: pointer;
+    margin: 0;
+}
+
+.column-menu-checkbox-item span {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Column Menu Actions */
+.column-menu-actions {
+    padding: 12px;
+    display: flex;
+    gap: 8px;
+    border-top: 1px solid #e0e0e0;
+    background-color: #f8f9fa;
+}
+
+.column-menu-btn {
+    flex: 1;
+    padding: 8px 16px;
+    border: none;
+    border-radius: 4px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.1s ease;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.column-menu-btn:active {
+    transform: scale(0.98);
+}
+
+.column-menu-btn-filter {
+    background-color: #0070ff;
+    color: #ffffff;
+}
+
+.column-menu-btn-filter:hover {
+    background-color: #0056b3;
+}
+
+.column-menu-btn-clear {
+    background-color: #ffffff;
+    color: #333;
+    border: 1px solid #e0e0e0;
+}
+
+.column-menu-btn-clear:hover {
+    background-color: #f5f5f5;
+}
+
+/* Scrollbar for checkboxes */
+.column-menu-checkboxes::-webkit-scrollbar {
+    width: 6px;
+}
+
+.column-menu-checkboxes::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+}
+
+.column-menu-checkboxes::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 3px;
+}
+
+.column-menu-checkboxes::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
 /* Hidden Columns Menu */
 .hidden-columns-menu {
     position: relative;

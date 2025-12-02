@@ -215,6 +215,9 @@ class Renderer {
             html += `${column.header || column.key}${sortIcon}`;
             html += '</span>';
             
+            // Column menu button
+            html += `<button class="column-menu-btn-trigger" data-column-index="${originalIndex}" title="Column menu">☰</button>`;
+            
             html += '</div>';
             
             // Resize handle
@@ -378,6 +381,11 @@ class Renderer {
         }
         if (this.table.options.selectable) {
             this.attachCheckboxListeners();
+        }
+        
+        // Attach column menu button listeners
+        if (this.table.columnMenu) {
+            this.table.columnMenu.attachMenuButtonListeners();
         }
         
         // Attach Add and Delete button handlers

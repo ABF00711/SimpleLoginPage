@@ -19,6 +19,7 @@ $pageScripts = [
     'libs/CustomTable/modules/renderer.js',
     'libs/CustomTable/modules/add-modal.js',
     'libs/CustomTable/modules/pattern-manager.js',
+    'libs/CustomTable/modules/column-menu.js',
     'libs/CustomTable/table-module.js',
     'customers.js'
 ];
