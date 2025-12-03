@@ -15,8 +15,8 @@
     </smart-menu>
   </div>
   <div class="header-right">
-    <div class="user-menu">
-      <smart-drop-down-list selected-indexes="[0]" class="user-dropdown">
+    <div class="user-menu" style="z-index: 1000;">
+      <smart-drop-down-list selected-indexes="[0]" class="user-dropdown" style="z-index: 1000;">
         <smart-list-item value="username">
           <span class="dropdown-username"><?php echo htmlspecialchars($_SESSION['username']); ?></span>
         </smart-list-item>
