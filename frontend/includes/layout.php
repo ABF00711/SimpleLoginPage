@@ -63,7 +63,15 @@ $pageScripts = $pageScripts ?? [];
   </div>
 
   <main class="content">
-    <smart-tabs id="tabs" class="demoTabs" reorder close-buttons></smart-tabs>
+    <div class="tabs-container">
+      <div class="tabs-actions">
+        <button type="button" id="tabs-save-load-btn" class="tabs-action-btn" title="Save/Load Tabs">
+          <span class="tabs-action-icon">📋</span>
+          <span class="tabs-action-text">Tabs</span>
+        </button>
+      </div>
+      <smart-tabs id="tabs" class="demoTabs" reorder close-buttons></smart-tabs>
+    </div>
   </main>
 
   <?php include __DIR__ . '/footer.php'; ?>
@@ -75,6 +83,7 @@ $pageScripts = $pageScripts ?? [];
   ?>
 
   <script src="./frontend/assets/js/router.js"></script>
+  <script src="./frontend/assets/js/tabs-manager.js"></script>
   <script src="./frontend/assets/js/tabManager.js"></script>
   <script src="./frontend/assets/js/menu.js"></script>
   <script src="./frontend/assets/js/message.js"></script>

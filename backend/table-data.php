@@ -62,11 +62,23 @@ switch ($action) {
     case 'deletePattern':
         handleDeletePattern($jsonBody);
         break;
+    case 'getTabsConfigurations':
+        handleGetTabsConfigurations($jsonBody);
+        break;
+    case 'getTabsConfiguration':
+        handleGetTabsConfiguration($jsonBody);
+        break;
+    case 'saveTabsConfiguration':
+        handleSaveTabsConfiguration($jsonBody);
+        break;
+    case 'deleteTabsConfiguration':
+        handleDeleteTabsConfiguration($jsonBody);
+        break;
     default:
         http_response_code(400);
         echo json_encode([
             'status' => 'error',
-            'message' => 'Invalid action. Use "get", "delete", "add", "update", "getFields", "getLookupData", "getGridState", "saveGridState", "getPatterns", "getPattern", "savePattern", or "deletePattern"'
+            'message' => 'Invalid action. Use "get", "delete", "add", "update", "getFields", "getLookupData", "getGridState", "saveGridState", "getPatterns", "getPattern", "savePattern", "deletePattern", "getTabsConfigurations", "getTabsConfiguration", "saveTabsConfiguration", or "deleteTabsConfiguration"'
         ]);
         exit;
 }
@@ -1582,6 +1594,302 @@ function handleDeletePattern($jsonBody = null) {
             echo json_encode([
                 'status' => 'success',
                 'message' => 'Pattern deleted successfully',
+                'affectedRows' => $affectedRows
+            ]);
+        } else {
+            throw new Exception('Failed to execute delete query: ' . $stmt->error);
+        }
+        
+    } catch (Exception $e) {
+        http_response_code(500);
+        echo json_encode([
+            'status' => 'error',
+            'message' => $e->getMessage()
+        ]);
+    } catch (Error $e) {
+        http_response_code(500);
+        echo json_encode([
+            'status' => 'error',
+            'message' => $e->getMessage()
+        ]);
+    }
+}
+
+/**
+ * Handle GET request for tabs configurations list
+ */
+function handleGetTabsConfigurations($jsonBody = null) {
+    global $conn;
+    
+    try {
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+        $userId = $_SESSION['user_id'] ?? null;
+        
+        if (!$userId) {
+            throw new Exception('User not authenticated');
+        }
+        
+        // Check if table exists first
+        $checkTable = $conn->query("SHOW TABLES LIKE 'tab_interfaces'");
+        if ($checkTable->num_rows === 0) {
+            // Table doesn't exist, return empty array
+            echo json_encode([
+                'status' => 'success',
+                'data' => []
+            ]);
+            return;
+        }
+        
+        // Convert userId to string if it's numeric (for consistency with other tables)
+        $userIdStr = is_numeric($userId) ? (string)$userId : $userId;
+        
+        $sql = "SELECT id, tabs_name as name, tabs_json as data, created_at FROM `tab_interfaces` WHERE user_id = ? ORDER BY created_at DESC";
+        $stmt = $conn->prepare($sql);
+        if (!$stmt) {
+            throw new Exception('Failed to prepare query: ' . $conn->error);
+        }
+        
+        $stmt->bind_param("s", $userIdStr);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        
+        $configurations = [];
+        while ($row = $result->fetch_assoc()) {
+            $configurations[] = [
+                'id' => $row['id'],
+                'name' => $row['name'],
+                'data' => $row['data'],
+                'created_at' => $row['created_at']
+            ];
+        }
+        $stmt->close();
+        
+        echo json_encode([
+            'status' => 'success',
+            'data' => $configurations
+        ]);
+        
+    } catch (Exception $e) {
+        http_response_code(500);
+        echo json_encode([
+            'status' => 'error',
+            'message' => $e->getMessage()
+        ]);
+    } catch (Error $e) {
+        http_response_code(500);
+        echo json_encode([
+            'status' => 'error',
+            'message' => $e->getMessage()
+        ]);
+    }
+}
+
+/**
+ * Handle GET request for single tabs configuration
+ */
+function handleGetTabsConfiguration($jsonBody = null) {
+    global $conn;
+    
+    try {
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+        $userId = $_SESSION['user_id'] ?? null;
+        
+        if (!$userId) {
+            throw new Exception('User not authenticated');
+        }
+        
+        if ($jsonBody === null) {
+            $jsonInput = file_get_contents('php://input');
+            $data = json_decode($jsonInput, true);
+        } else {
+            $data = $jsonBody;
+        }
+        
+        $id = $data['id'] ?? null;
+        
+        if (!$id) {
+            throw new Exception('Id is required');
+        }
+        
+        // Convert userId to string
+        $userIdStr = is_numeric($userId) ? (string)$userId : $userId;
+        
+        $sql = "SELECT id, tabs_name as name, tabs_json as data FROM `tab_interfaces` WHERE id = ? AND user_id = ? LIMIT 1";
+        $stmt = $conn->prepare($sql);
+        if (!$stmt) {
+            throw new Exception('Failed to prepare query: ' . $conn->error);
+        }
+        
+        $stmt->bind_param("is", $id, $userIdStr);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        
+        if ($result->num_rows === 0) {
+            $stmt->close();
+            throw new Exception('Tabs configuration not found');
+        }
+        
+        $row = $result->fetch_assoc();
+        $stmt->close();
+        
+        // Map database columns to expected format
+        $responseData = [
+            'id' => $row['id'],
+            'name' => $row['name'],
+            'data' => $row['data']
+        ];
+        
+        echo json_encode([
+            'status' => 'success',
+            'data' => $responseData
+        ]);
+        
+    } catch (Exception $e) {
+        http_response_code(500);
+        echo json_encode([
+            'status' => 'error',
+            'message' => $e->getMessage()
+        ]);
+    } catch (Error $e) {
+        http_response_code(500);
+        echo json_encode([
+            'status' => 'error',
+            'message' => $e->getMessage()
+        ]);
+    }
+}
+
+/**
+ * Handle SAVE request for tabs configuration
+ */
+function handleSaveTabsConfiguration($jsonBody = null) {
+    global $conn;
+    
+    try {
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+        $userId = $_SESSION['user_id'] ?? null;
+        
+        if (!$userId) {
+            throw new Exception('User not authenticated');
+        }
+        
+        if ($jsonBody === null) {
+            $jsonInput = file_get_contents('php://input');
+            $data = json_decode($jsonInput, true);
+        } else {
+            $data = $jsonBody;
+        }
+        
+        $name = $data['name'] ?? '';
+        $tabsData = $data['data'] ?? '';
+        $id = $data['id'] ?? null;
+        
+        if (!$name || !$tabsData) {
+            throw new Exception('Name and data are required');
+        }
+        
+        // Convert userId to string
+        $userIdStr = is_numeric($userId) ? (string)$userId : $userId;
+        
+        if ($id) {
+            // Update existing configuration
+            $sql = "UPDATE `tab_interfaces` SET tabs_name = ?, tabs_json = ? WHERE id = ? AND user_id = ?";
+            $stmt = $conn->prepare($sql);
+            if (!$stmt) {
+                throw new Exception('Failed to prepare update query: ' . $conn->error);
+            }
+            $stmt->bind_param("ssis", $name, $tabsData, $id, $userIdStr);
+        } else {
+            // Insert new configuration
+            $sql = "INSERT INTO `tab_interfaces` (user_id, tabs_name, tabs_json) VALUES (?, ?, ?)";
+            $stmt = $conn->prepare($sql);
+            if (!$stmt) {
+                throw new Exception('Failed to prepare insert query: ' . $conn->error);
+            }
+            $stmt->bind_param("sss", $userIdStr, $name, $tabsData);
+        }
+        
+        if ($stmt->execute()) {
+            $insertedId = $id ? $id : $conn->insert_id;
+            $stmt->close();
+            
+            echo json_encode([
+                'status' => 'success',
+                'message' => $id ? 'Tabs configuration updated successfully' : 'Tabs configuration saved successfully',
+                'id' => $insertedId
+            ]);
+        } else {
+            throw new Exception('Failed to execute query: ' . $stmt->error);
+        }
+        
+    } catch (Exception $e) {
+        http_response_code(500);
+        echo json_encode([
+            'status' => 'error',
+            'message' => $e->getMessage()
+        ]);
+    } catch (Error $e) {
+        http_response_code(500);
+        echo json_encode([
+            'status' => 'error',
+            'message' => $e->getMessage()
+        ]);
+    }
+}
+
+/**
+ * Handle DELETE request for tabs configuration
+ */
+function handleDeleteTabsConfiguration($jsonBody = null) {
+    global $conn;
+    
+    try {
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+        $userId = $_SESSION['user_id'] ?? null;
+        
+        if (!$userId) {
+            throw new Exception('User not authenticated');
+        }
+        
+        if ($jsonBody === null) {
+            $jsonInput = file_get_contents('php://input');
+            $data = json_decode($jsonInput, true);
+        } else {
+            $data = $jsonBody;
+        }
+        
+        $id = $data['id'] ?? null;
+        
+        if (!$id) {
+            throw new Exception('Id is required');
+        }
+        
+        // Convert userId to string
+        $userIdStr = is_numeric($userId) ? (string)$userId : $userId;
+        
+        $sql = "DELETE FROM `tab_interfaces` WHERE id = ? AND user_id = ?";
+        $stmt = $conn->prepare($sql);
+        if (!$stmt) {
+            throw new Exception('Failed to prepare delete query: ' . $conn->error);
+        }
+        
+        $stmt->bind_param("is", $id, $userIdStr);
+        
+        if ($stmt->execute()) {
+            $affectedRows = $stmt->affected_rows;
+            $stmt->close();
+            
+            echo json_encode([
+                'status' => 'success',
+                'message' => 'Tabs configuration deleted successfully',
                 'affectedRows' => $affectedRows
             ]);
         } else {

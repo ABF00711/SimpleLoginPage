@@ -11,6 +11,7 @@ class TabManager {
         this.tabMap = new Map(); // Maps pageName -> { index, label, content, modals, scripts }
         this.storageKey = 'beornnotes_tabs_state';
         this.router = null;
+        this.tabsManager = null; // TabsManager instance for save/load
         this.init();
     }
 
@@ -74,6 +75,9 @@ class TabManager {
             // Set up event listeners
             this.setupEventListeners();
 
+            // Initialize tabs manager for save/load
+            this.initializeTabsManager();
+
             // Initialize with Dashboard tab
             this.initializeDashboard();
         });
@@ -96,6 +100,45 @@ class TabManager {
             this.updateTabMapAfterReorder();
             this.saveState();
         });
+    }
+
+    /**
+     * Initialize tabs manager for save/load functionality
+     */
+    initializeTabsManager() {
+        // Wait for TabsManager class to be available
+        if (typeof window.TabsManager === 'undefined') {
+            console.warn('TabsManager not loaded yet, will retry...');
+            setTimeout(() => this.initializeTabsManager(), 100);
+            return;
+        }
+
+        // Create TabsManager instance
+        this.tabsManager = new window.TabsManager(this);
+        
+        // Attach button click handler - wait for button to exist in DOM
+        const attachButtonHandler = () => {
+            const tabsBtn = document.getElementById('tabs-save-load-btn');
+            if (tabsBtn && tabsBtn.parentNode) {
+                // Add click handler directly (don't clone, just add listener)
+                tabsBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    if (this.tabsManager) {
+                        this.tabsManager.show(tabsBtn);
+                    } else {
+                        console.error('TabsManager instance not available');
+                    }
+                });
+                console.log('Tabs button handler attached successfully');
+            } else {
+                // Button not found yet, retry
+                setTimeout(attachButtonHandler, 100);
+            }
+        };
+        
+        // Start trying to attach handler after a short delay to ensure DOM is ready
+        setTimeout(attachButtonHandler, 200);
     }
 
     /**
@@ -623,6 +666,93 @@ class TabManager {
             localStorage.setItem(this.storageKey, JSON.stringify(state));
         } catch (error) {
             console.error('Error saving tab state:', error);
+        }
+    }
+
+    /**
+     * Restore tabs from saved data (used by TabsManager)
+     */
+    async restoreTabsFromData(tabsData) {
+        if (!tabsData || !tabsData.tabs || tabsData.tabs.length === 0) {
+            console.warn('No tabs data to restore');
+            return;
+        }
+
+        // Clear existing tabs
+        const tabItems = this.tabs.querySelectorAll('smart-tab-item');
+        for (let i = tabItems.length - 1; i >= 0; i--) {
+            this.tabs.removeAt(i);
+        }
+        this.tabMap.clear();
+
+        // Wait for tabs to be fully cleared
+        await new Promise(resolve => setTimeout(resolve, 100));
+
+        // Restore tabs one by one (similar to restoreState logic)
+        for (let i = 0; i < tabsData.tabs.length; i++) {
+            const tabData = tabsData.tabs[i];
+            
+            try {
+                const currentTabItems = this.tabs.querySelectorAll('smart-tab-item');
+                const insertIndex = currentTabItems.length;
+
+                this.tabs.insert(insertIndex, {
+                    label: tabData.label,
+                    content: tabData.content || '<div class="card"><h2>Loading...</h2></div>'
+                });
+
+                await new Promise(resolve => setTimeout(resolve, 100));
+
+                const updatedTabItems = this.tabs.querySelectorAll('smart-tab-item');
+                if (updatedTabItems[insertIndex]) {
+                    updatedTabItems[insertIndex].setAttribute('data-page-name', tabData.pageName);
+                }
+
+                this.tabMap.set(tabData.pageName, {
+                    index: insertIndex,
+                    pageName: tabData.pageName,
+                    label: tabData.label,
+                    content: tabData.content || '',
+                    modals: tabData.modals || '',
+                    scripts: tabData.scripts || [],
+                    styles: tabData.styles || []
+                });
+
+                if (tabData.modals) {
+                    setTimeout(() => {
+                        this.injectModals(insertIndex, tabData.modals);
+                    }, 150);
+                }
+
+                if (tabData.styles && tabData.styles.length > 0) {
+                    await this.loadTabStyles(insertIndex, tabData.styles);
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                }
+
+                if (tabData.scripts && tabData.scripts.length > 0) {
+                    await this.loadTabScripts(insertIndex, tabData.scripts);
+                    
+                    if (tabData.pageName === 'customers' && typeof window.initCustomersTable === 'function') {
+                        window.initCustomersTable();
+                    } else if (tabData.pageName === 'customers2' && typeof window.initCustomers2Table === 'function') {
+                        window.initCustomers2Table();
+                    } else if (tabData.pageName === 'profile' && typeof window.initProfilePage === 'function') {
+                        setTimeout(() => {
+                            window.initProfilePage();
+                        }, 200);
+                    }
+                }
+            } catch (error) {
+                console.error(`Error restoring tab ${i}:`, error);
+            }
+        }
+
+        // Restore selected tab
+        if (tabsData.selectedIndex !== null && tabsData.selectedIndex >= 0) {
+            const tabItems = this.tabs.querySelectorAll('smart-tab-item');
+            if (tabsData.selectedIndex < tabItems.length) {
+                this.tabs.select(tabsData.selectedIndex);
+            }
         }
     }
 
